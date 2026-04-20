@@ -1,0 +1,5 @@
+{
+  "moneda": "ARS",
+  "impuesto": 0.21,
+  "stock_minimo_default": 5
+}

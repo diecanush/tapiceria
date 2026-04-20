@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "nombre": "Tela Chenille",
+    "unidad": "m",
+    "stock": 25,
+    "stock_minimo": 5
+  }
+]
