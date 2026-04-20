@@ -49,3 +49,5 @@ render_page_start('Clientes');
   </tbody>
 </table>
 <?php render_page_end();
+require_once __DIR__ . '/includes/bootstrap.php';
+render_header('Clientes');

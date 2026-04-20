@@ -66,3 +66,5 @@ render_page_start('Insumos');
   </tbody>
 </table>
 <?php render_page_end();
+require_once __DIR__ . '/includes/bootstrap.php';
+render_header('Insumos');

@@ -36,3 +36,17 @@ button { background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
 button:hover { background: #1e40af; }
 .flash { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; padding: 10px; border-radius: 6px; }
 .muted { color: #6b7280; font-size: 13px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #f7f7f7;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+}

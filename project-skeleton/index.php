@@ -25,3 +25,6 @@ render_page_start('Inicio');
   <article class="card"><h3>Stock bajo</h3><div class="value"><?= count($stockBajo) ?></div></article>
 </section>
 <?php render_page_end();
+require_once __DIR__ . '/includes/bootstrap.php';
+render_header(app_title());
+echo '<p>Bienvenido al esqueleto del sistema.</p>';
