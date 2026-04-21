@@ -61,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $nuevoInsumo = [
                     'id' => next_id($insumos),
                     'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
                     'unidad' => $unidadNueva === '' ? 'unidad' : $unidadNueva,
                     'stock' => 0,
                     'stock_minimo' => 0,
@@ -225,6 +226,10 @@ render_page_start('Presupuestos');
           <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
         <?php endforeach; ?>
       </select>
+    </label>
+    <p class="muted">Si no está en la lista, escribilo abajo y se guarda automáticamente con unidad "unidad".</p>
+    <label>Si no existe, escribí el nuevo insumo
+      <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
     </label>
     <p class="muted">Si no está en la lista, escribilo abajo y se guarda automáticamente.</p>
     <p class="muted">Si no existe, cargalo abajo y se guarda automáticamente.</p>
