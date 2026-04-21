@@ -55,6 +55,11 @@ button:hover { background: #1e40af; }
   gap: 8px;
   margin-bottom: 10px;
 }
+.insumo-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 

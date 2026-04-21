@@ -149,6 +149,9 @@ render_page_start('Presupuestos');
   </label>
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
+    <p class="muted">Se cargan 3 renglones iniciales. Con + agregás uno más y con X quitás el que no quieras.</p>
+    <div id="insumos-items"></div>
+    <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
     <p class="muted">Usá + para agregar filas, X para quitar, y si no existe el insumo escribilo para guardarlo.</p>
     <div id="insumos-items"></div>
     <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
@@ -210,6 +213,10 @@ render_page_start('Presupuestos');
 
 <template id="insumo-item-template">
   <article class="card insumo-item">
+    <div class="insumo-item-head">
+      <strong>Insumo</strong>
+      <button type="button" class="danger-btn remove-insumo">X</button>
+    </div>
     <button type="button" class="danger-btn remove-insumo">X</button>
     <label>Insumo existente
       <select name="insumo_id[]">
@@ -219,6 +226,7 @@ render_page_start('Presupuestos');
         <?php endforeach; ?>
       </select>
     </label>
+    <p class="muted">Si no está en la lista, escribilo abajo y se guarda automáticamente.</p>
     <p class="muted">Si no existe, cargalo abajo y se guarda automáticamente.</p>
     <label>Nuevo insumo (opcional)
       <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
@@ -266,6 +274,8 @@ render_page_start('Presupuestos');
       }
     });
 
+    addItem();
+    addItem();
     addItem();
   })();
 </script>
