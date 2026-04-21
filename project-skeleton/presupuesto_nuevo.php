@@ -31,6 +31,271 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
     $margen = (float) ($_POST['margen'] ?? 0);
     $impuesto = (float) ($config['impuesto'] ?? 0);
+    $insumosSeleccionados = $_POST['insumo_id'] ?? [];
+    $nombresNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $unidadesNuevas = $_POST['insumo_unidad_nueva'] ?? [];
+    $cantidades = $_POST['cantidad'] ?? [];
+    $costosUnitarios = $_POST['costo_unitario'] ?? [];
+
+    if ($clienteId <= 0) {
+        redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
+    }
+
+    $insumosById = [];
+    foreach ($insumos as $insumo) {
+        $insumosById[(int) ($insumo['id'] ?? 0)] = $insumo;
+    }
+
+    $insumosEstimados = [];
+    $materiales = 0.0;
+
+    foreach ($insumosSeleccionados as $index => $insumoIdRaw) {
+        $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($nombresNuevos[$index] ?? ''));
+        $unidadNueva = trim((string) ($unidadesNuevas[$index] ?? 'unidad'));
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $insumoExistente = buscar_insumo_por_nombre($insumos, $nombreNuevo);
+            if ($insumoExistente !== null) {
+                $insumoId = (int) ($insumoExistente['id'] ?? 0);
+            } else {
+                $nuevoInsumo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
+                    'unidad' => $unidadNueva === '' ? 'unidad' : $unidadNueva,
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevoInsumo;
+                $insumosById[(int) $nuevoInsumo['id']] = $nuevoInsumo;
+                $insumoId = (int) $nuevoInsumo['id'];
+            }
+        }
+
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
+        if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
+            continue;
+        }
+
+        if (!isset($insumosById[$insumoId])) {
+            continue;
+        }
+
+        $insumo = $insumosById[$insumoId];
+        $subtotalInsumo = $cantidad * $costoUnitario;
+        $materiales += $subtotalInsumo;
+
+        $insumosEstimados[] = [
+            'insumo_id' => $insumoId,
+            'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
+            'cantidad' => $cantidad,
+            'costo_unitario' => round($costoUnitario, 2),
+            'subtotal' => round($subtotalInsumo, 2),
+        ];
+    }
+
+    write_json(data_file('insumos'), $insumos);
+
+    $insumosSeleccionados = $_POST['insumo_id'] ?? [];
+    $nombresNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $cantidades = $_POST['cantidad'] ?? [];
+    $costosUnitarios = $_POST['costo_unitario'] ?? [];
+
+    if ($clienteId <= 0) {
+        redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
+    }
+
+    $insumosById = [];
+    foreach ($insumos as $insumo) {
+        $insumosById[(int) ($insumo['id'] ?? 0)] = $insumo;
+    }
+
+    $insumosEstimados = [];
+    $materiales = 0.0;
+
+    foreach ($insumosSeleccionados as $index => $insumoIdRaw) {
+        $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($nombresNuevos[$index] ?? ''));
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $existente = buscar_insumo_por_nombre($insumos, $nombreNuevo);
+            if ($existente !== null) {
+                $insumoId = (int) ($existente['id'] ?? 0);
+            } else {
+                $nuevoInsumo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevoInsumo;
+                $insumosById[(int) $nuevoInsumo['id']] = $nuevoInsumo;
+                $insumoId = (int) $nuevoInsumo['id'];
+            }
+        }
+
+        if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
+            continue;
+        }
+
+        if (!isset($insumosById[$insumoId])) {
+            continue;
+        }
+
+        $insumo = $insumosById[$insumoId];
+        $subtotalInsumo = $cantidad * $costoUnitario;
+        $materiales += $subtotalInsumo;
+
+        $insumosEstimados[] = [
+            'insumo_id' => $insumoId,
+            'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
+            'cantidad' => $cantidad,
+            'costo_unitario' => round($costoUnitario, 2),
+            'subtotal' => round($subtotalInsumo, 2),
+        ];
+    }
+
+    write_json(data_file('insumos'), $insumos);
+
+    $insumosSeleccionados = $_POST['insumo_id'] ?? [];
+    $nombresNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $cantidades = $_POST['cantidad'] ?? [];
+    $costosUnitarios = $_POST['costo_unitario'] ?? [];
+
+    if ($clienteId <= 0) {
+        redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
+    }
+
+    $insumosById = [];
+    foreach ($insumos as $insumo) {
+        $insumosById[(int) ($insumo['id'] ?? 0)] = $insumo;
+    }
+
+    $insumosEstimados = [];
+    $materiales = 0.0;
+
+    foreach ($insumosSeleccionados as $index => $insumoIdRaw) {
+        $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($nombresNuevos[$index] ?? ''));
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $existente = buscar_insumo_por_nombre($insumos, $nombreNuevo);
+            if ($existente !== null) {
+                $insumoId = (int) ($existente['id'] ?? 0);
+            } else {
+                $nuevoInsumo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevoInsumo;
+                $insumosById[(int) $nuevoInsumo['id']] = $nuevoInsumo;
+                $insumoId = (int) $nuevoInsumo['id'];
+            }
+        }
+
+        if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
+            continue;
+        }
+
+        if (!isset($insumosById[$insumoId])) {
+            continue;
+        }
+
+        $insumo = $insumosById[$insumoId];
+        $subtotalInsumo = $cantidad * $costoUnitario;
+        $materiales += $subtotalInsumo;
+
+        $insumosEstimados[] = [
+            'insumo_id' => $insumoId,
+            'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
+            'cantidad' => $cantidad,
+            'costo_unitario' => round($costoUnitario, 2),
+            'subtotal' => round($subtotalInsumo, 2),
+        ];
+    }
+
+    write_json(data_file('insumos'), $insumos);
+
+    if ($clienteId <= 0) {
+        redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
+    }
+
+    $insumoIds = $_POST['insumo_id'] ?? [];
+    $insumoNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $cantidades = $_POST['cantidad'] ?? [];
+    $costos = $_POST['costo_unitario'] ?? [];
+
+    $insumosById = [];
+    foreach ($insumos as $item) {
+        $insumosById[(int) ($item['id'] ?? 0)] = $item;
+    }
+
+    $materiales = 0.0;
+    $insumosEstimados = [];
+
+    foreach ($insumoIds as $i => $insumoIdRaw) {
+        $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($insumoNuevos[$i] ?? ''));
+        $cantidad = (float) ($cantidades[$i] ?? 0);
+        $costoUnitario = (float) ($costos[$i] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $exists = find_insumo_by_name($insumos, $nombreNuevo);
+            if ($exists !== null) {
+                $insumoId = (int) ($exists['id'] ?? 0);
+            } else {
+                $nuevo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevo;
+                $insumosById[(int) $nuevo['id']] = $nuevo;
+                $insumoId = (int) $nuevo['id'];
+            }
+        }
+
+        if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
+            continue;
+        }
+
+        if (!isset($insumosById[$insumoId])) {
+            continue;
+        }
+
+        $insumo = $insumosById[$insumoId];
+        $subtotal = $cantidad * $costoUnitario;
+        $materiales += $subtotal;
+
+        $insumosEstimados[] = [
+            'insumo_id' => $insumoId,
+            'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
+            'cantidad' => $cantidad,
+            'costo_unitario' => round($costoUnitario, 2),
+            'subtotal' => round($subtotal, 2),
+        ];
+    }
+
+    write_json(data_file('insumos'), $insumos);
 
     if ($clienteId <= 0) {
         redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
@@ -160,6 +425,7 @@ render_page_start('Presupuestos');
   <div><button type="submit">Crear presupuesto</button></div>
 </form>
 
+<table class="table mobile-hidden">
 <table class="table">
   <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Materiales</th><th>Total</th><th>Detalle</th></tr></thead>
   <tbody>
