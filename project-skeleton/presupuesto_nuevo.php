@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
@@ -9,6 +8,10 @@ $insumos = read_json(data_file('insumos'));
 $config = read_json(data_file('config'));
 $presupuestos = read_json(data_file('presupuestos'));
 
+function find_insumo_by_name(array $insumos, string $name): ?array
+{
+    $wanted = strtolower(trim($name));
+    if ($wanted === '') {
 function buscar_insumo_por_nombre(array $insumos, string $nombre): ?array
 {
     $buscado = strtolower(trim($nombre));
@@ -17,6 +20,8 @@ function buscar_insumo_por_nombre(array $insumos, string $nombre): ?array
     }
 
     foreach ($insumos as $insumo) {
+        $current = strtolower(trim((string) ($insumo['nombre'] ?? '')));
+        if ($current === $wanted) {
         $actual = strtolower(trim((string) ($insumo['nombre'] ?? '')));
         if ($actual === $buscado) {
     foreach ($insumos as $insumo) {
@@ -236,6 +241,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     write_json(data_file('insumos'), $insumos);
 
+    if ($clienteId <= 0) {
+        redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
+    }
+
+    $insumoIds = $_POST['insumo_id'] ?? [];
+    $insumoNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $cantidades = $_POST['cantidad'] ?? [];
+    $costos = $_POST['costo_unitario'] ?? [];
+
+    $insumosById = [];
+    foreach ($insumos as $item) {
+        $insumosById[(int) ($item['id'] ?? 0)] = $item;
+    }
+
+    $materiales = 0.0;
+    $insumosEstimados = [];
+
+    foreach ($insumoIds as $i => $insumoIdRaw) {
+        $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($insumoNuevos[$i] ?? ''));
+        $cantidad = (float) ($cantidades[$i] ?? 0);
+        $costoUnitario = (float) ($costos[$i] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $exists = find_insumo_by_name($insumos, $nombreNuevo);
+            if ($exists !== null) {
+                $insumoId = (int) ($exists['id'] ?? 0);
+            } else {
+                $nuevo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevo;
+                $insumosById[(int) $nuevo['id']] = $nuevo;
+                $insumoId = (int) $nuevo['id'];
+            }
+        }
+
+        if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
+            continue;
+        }
+
+        if (!isset($insumosById[$insumoId])) {
+            continue;
+        }
+
+        $insumo = $insumosById[$insumoId];
+        $subtotal = $cantidad * $costoUnitario;
+        $materiales += $subtotal;
+
+        $insumosEstimados[] = [
+            'insumo_id' => $insumoId,
+            'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
+            'cantidad' => $cantidad,
+            'costo_unitario' => round($costoUnitario, 2),
+            'subtotal' => round($subtotal, 2),
+        ];
+    }
+
+    write_json(data_file('insumos'), $insumos);
+
     $subtotal = $manoObra + $materiales;
     $recargo = $subtotal * ($margen / 100);
     $base = $subtotal + $recargo;
@@ -262,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $clientesById = [];
 foreach ($clientes as $cliente) {
-    $clientesById[(int) $cliente['id']] = (string) $cliente['nombre'];
+    $clientesById[(int) ($cliente['id'] ?? 0)] = (string) ($cliente['nombre'] ?? '');
 }
 
 render_page_start('Presupuestos');
@@ -276,18 +346,22 @@ render_page_start('Presupuestos');
       <?php endforeach; ?>
     </select>
   </label>
+
   <label>Detalle
     <input type="text" name="detalle" placeholder="Ej: Retapizado de sillón 2 cuerpos">
   </label>
+
   <label>Mano de obra
     <input type="number" step="0.01" name="mano_obra" required>
   </label>
+
   <label>Margen (%)
     <input type="number" step="0.01" name="margen" value="30" required>
   </label>
 
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
+    <p class="muted">3 renglones iniciales. Botón + para agregar y X para eliminar.</p>
     <p class="muted"><strong>UI limpia v2026-04-21</strong></p>
     <p class="muted">3 renglones iniciales. Con + agregás uno. Con X eliminás un renglón.</p>
     <div id="insumos-items"></div>
@@ -332,9 +406,10 @@ render_page_start('Presupuestos');
   <tbody>
   <?php foreach ($presupuestos as $presupuesto): ?>
     <tr>
-      <td><?= (int) $presupuesto['id'] ?></td>
+      <td><?= (int) ($presupuesto['id'] ?? 0) ?></td>
       <td><?= h((string) ($presupuesto['fecha'] ?? '')) ?></td>
       <td><?= h($clientesById[(int) ($presupuesto['cliente_id'] ?? 0)] ?? 'N/D') ?></td>
+      <td><?= h((string) ($presupuesto['estado'] ?? '')) ?></td>
       <td><?= h((string) $presupuesto['estado']) ?></td>
       <td><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></td>
       <td><?= money((float) ($presupuesto['total'] ?? 0)) ?></td>
@@ -378,6 +453,7 @@ render_page_start('Presupuestos');
       </select>
     </label>
 
+    <label>Si no existe, escribí insumo nuevo
     <label>Si no existe, escribí el insumo nuevo
       <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
     </label>
@@ -418,6 +494,7 @@ render_page_start('Presupuestos');
   }
 
   function addItem() {
+    container.appendChild(template.content.cloneNode(true));
     var node = template.content.cloneNode(true);
     container.appendChild(node);
   }
@@ -437,6 +514,12 @@ render_page_start('Presupuestos');
     }
   });
 
+  addItem();
+  addItem();
+  addItem();
+})();
+</script>
+<?php render_page_end(); ?>
   container.innerHTML = '';
   addItem();
   addItem();
