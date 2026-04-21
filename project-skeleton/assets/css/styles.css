@@ -55,8 +55,6 @@ button:hover { background: #1e40af; }
   min-width: 36px;
   padding: 6px 10px;
 }
-}
-.danger-btn:hover { background: #b91c1c; }
 .insumo-item {
   display: grid;
   gap: 8px;

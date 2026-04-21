@@ -33,7 +33,21 @@ function h(?string $value): string
 
 function app_url(string $path = ''): string
 {
-    return $path === '' ? '' : '/' . ltrim($path, '/');
+    $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+    $baseDir = str_replace('\\', '/', dirname($scriptName));
+    $baseDir = rtrim($baseDir, '/');
+
+    if ($baseDir === '' || $baseDir === '.') {
+        $baseDir = '';
+    }
+
+    $normalizedPath = ltrim($path, '/');
+
+    if ($normalizedPath === '') {
+        return $baseDir === '' ? '/' : $baseDir . '/';
+    }
+
+    return ($baseDir === '' ? '' : $baseDir) . '/' . $normalizedPath;
 }
 
 function redirect_with_message(string $path, string $message): never
