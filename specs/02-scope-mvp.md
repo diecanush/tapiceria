@@ -5,6 +5,8 @@
 ### Presupuestos
 - Alta de clientes.
 - Alta de solicitudes (mueble, medidas, fotos, observaciones).
+- Registro de medidas del mueble y piezas a cortar por cada presupuesto.
+- Estimación automática de insumos según piezas/dimensiones y porcentaje de desperdicio.
 - Cálculo de costos: mano de obra + insumos + margen + impuestos.
 - Emisión de presupuesto PDF.
 - Estados: borrador, enviado, aprobado, rechazado, vencido.

@@ -3,8 +3,11 @@
 ## 1) Solicitud a presupuesto
 1. Crear cliente (si no existe).
 2. Registrar solicitud con datos y fotos.
-3. Armar presupuesto con ítems.
-4. Generar PDF y marcar como enviado.
+3. Cargar medidas del mueble (ancho, alto, profundidad) y tipo de tapizado.
+4. Definir piezas a cortar (asiento, respaldo, brazos, etc.) con dimensiones y cantidad.
+5. Calcular consumo estimado de insumos por piezas + desperdicio.
+6. Armar presupuesto con ítems y validar stock estimado.
+7. Generar PDF y marcar como enviado.
 
 ## 2) Aprobación a orden de trabajo
 1. Marcar presupuesto como aprobado.

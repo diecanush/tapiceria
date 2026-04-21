@@ -19,7 +19,9 @@ function data_file(string $name): string
 
 function next_id(array $rows): int
 {
-    $ids = array_map(static fn(array $row): int => (int) ($row['id'] ?? 0), $rows);
+    $ids = array_map(static function (array $row): int {
+        return (int) ($row['id'] ?? 0);
+    }, $rows);
     $max = $ids === [] ? 0 : max($ids);
     return $max + 1;
 }
