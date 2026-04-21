@@ -71,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
         if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
             continue;
         }
@@ -149,11 +152,35 @@ render_page_start('Presupuestos');
     <p class="muted">Se cargan 3 renglones iniciales. Con + agregás uno más y con X quitás el que no quieras.</p>
     <div id="insumos-items"></div>
     <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
+    <p class="muted">Usá + para agregar filas, X para quitar, y si no existe el insumo escribilo para guardarlo.</p>
+    <div id="insumos-items"></div>
+    <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
+    <p class="muted">Completá solo las filas necesarias. Materiales se calcula automáticamente.</p>
+    <table class="table">
+      <thead><tr><th>Insumo</th><th>Cantidad</th><th>Costo unitario</th></tr></thead>
+      <tbody>
+      <?php for ($i = 0; $i < 3; $i++): ?>
+        <tr>
+          <td>
+            <select name="insumo_id[]">
+              <option value="">Seleccionar...</option>
+              <?php foreach ($insumos as $insumo): ?>
+                <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+              <?php endforeach; ?>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" min="0" name="cantidad[]" value="0"></td>
+          <td><input type="number" step="0.01" min="0" name="costo_unitario[]" value="0"></td>
+        </tr>
+      <?php endfor; ?>
+      </tbody>
+    </table>
   </fieldset>
   <div><button type="submit">Crear presupuesto</button></div>
 </form>
 
 <table class="table mobile-hidden">
+<table class="table">
   <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Materiales</th><th>Total</th><th>Detalle</th></tr></thead>
   <tbody>
   <?php foreach ($presupuestos as $presupuesto): ?>
@@ -190,6 +217,7 @@ render_page_start('Presupuestos');
       <strong>Insumo</strong>
       <button type="button" class="danger-btn remove-insumo">X</button>
     </div>
+    <button type="button" class="danger-btn remove-insumo">X</button>
     <label>Insumo existente
       <select name="insumo_id[]">
         <option value="">Seleccionar...</option>
@@ -199,6 +227,7 @@ render_page_start('Presupuestos');
       </select>
     </label>
     <p class="muted">Si no está en la lista, escribilo abajo y se guarda automáticamente.</p>
+    <p class="muted">Si no existe, cargalo abajo y se guarda automáticamente.</p>
     <label>Nuevo insumo (opcional)
       <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
     </label>
