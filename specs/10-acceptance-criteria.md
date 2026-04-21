@@ -3,6 +3,9 @@
 ## Presupuestos
 - Se puede crear cliente y solicitud asociada.
 - Se puede calcular total con mano de obra + insumos + margen + impuestos.
+- Se pueden registrar medidas del mueble y piezas a cortar por presupuesto.
+- El sistema calcula automáticamente consumo estimado de cada insumo según piezas y desperdicio.
+- Se puede editar manualmente la estimación automática de insumos antes de confirmar.
 - Se puede exportar presupuesto PDF.
 - Cambios de estado respetan flujo definido.
 
