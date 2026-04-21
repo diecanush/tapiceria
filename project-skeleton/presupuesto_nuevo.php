@@ -9,6 +9,19 @@ $insumos = read_json(data_file('insumos'));
 $config = read_json(data_file('config'));
 $presupuestos = read_json(data_file('presupuestos'));
 
+function buscar_insumo_por_nombre(array $insumos, string $nombre): ?array
+{
+    $buscado = strtolower(trim($nombre));
+    foreach ($insumos as $insumo) {
+        $actual = strtolower(trim((string) ($insumo['nombre'] ?? '')));
+        if ($actual !== '' && $actual === $buscado) {
+            return $insumo;
+        }
+    }
+
+    return null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
@@ -16,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $margen = (float) ($_POST['margen'] ?? 0);
     $impuesto = (float) ($config['impuesto'] ?? 0);
     $insumosSeleccionados = $_POST['insumo_id'] ?? [];
+    $nombresNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $unidadesNuevas = $_POST['insumo_unidad_nueva'] ?? [];
     $cantidades = $_POST['cantidad'] ?? [];
     $costosUnitarios = $_POST['costo_unitario'] ?? [];
 
@@ -33,6 +48,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     foreach ($insumosSeleccionados as $index => $insumoIdRaw) {
         $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($nombresNuevos[$index] ?? ''));
+        $unidadNueva = trim((string) ($unidadesNuevas[$index] ?? 'unidad'));
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $insumoExistente = buscar_insumo_por_nombre($insumos, $nombreNuevo);
+            if ($insumoExistente !== null) {
+                $insumoId = (int) ($insumoExistente['id'] ?? 0);
+            } else {
+                $nuevoInsumo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => $unidadNueva === '' ? 'unidad' : $unidadNueva,
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevoInsumo;
+                $insumosById[(int) $nuevoInsumo['id']] = $nuevoInsumo;
+                $insumoId = (int) $nuevoInsumo['id'];
+            }
+        }
+
         $cantidad = (float) ($cantidades[$index] ?? 0);
         $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
 
@@ -57,6 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'subtotal' => round($subtotalInsumo, 2),
         ];
     }
+
+    write_json(data_file('insumos'), $insumos);
 
     $subtotal = $manoObra + $materiales;
     $recargo = $subtotal * ($margen / 100);
@@ -109,6 +149,9 @@ render_page_start('Presupuestos');
   </label>
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
+    <p class="muted">Usá + para agregar filas, X para quitar, y si no existe el insumo escribilo para guardarlo.</p>
+    <div id="insumos-items"></div>
+    <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
     <p class="muted">Completá solo las filas necesarias. Materiales se calcula automáticamente.</p>
     <table class="table">
       <thead><tr><th>Insumo</th><th>Cantidad</th><th>Costo unitario</th></tr></thead>
@@ -133,6 +176,7 @@ render_page_start('Presupuestos');
   <div><button type="submit">Crear presupuesto</button></div>
 </form>
 
+<table class="table mobile-hidden">
 <table class="table">
   <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Materiales</th><th>Total</th><th>Detalle</th></tr></thead>
   <tbody>
@@ -149,4 +193,80 @@ render_page_start('Presupuestos');
   <?php endforeach; ?>
   </tbody>
 </table>
+
+<div class="mobile-cards">
+  <?php foreach ($presupuestos as $presupuesto): ?>
+    <article class="card">
+      <h3>Presupuesto #<?= (int) $presupuesto['id'] ?></h3>
+      <p><strong>Fecha:</strong> <?= h((string) ($presupuesto['fecha'] ?? '')) ?></p>
+      <p><strong>Cliente:</strong> <?= h($clientesById[(int) ($presupuesto['cliente_id'] ?? 0)] ?? 'N/D') ?></p>
+      <p><strong>Estado:</strong> <?= h((string) $presupuesto['estado']) ?></p>
+      <p><strong>Materiales:</strong> <?= money((float) ($presupuesto['materiales'] ?? 0)) ?></p>
+      <p><strong>Total:</strong> <?= money((float) ($presupuesto['total'] ?? 0)) ?></p>
+      <p><strong>Detalle:</strong> <?= h((string) ($presupuesto['detalle'] ?? '')) ?></p>
+    </article>
+  <?php endforeach; ?>
+</div>
+
+<template id="insumo-item-template">
+  <article class="card insumo-item">
+    <button type="button" class="danger-btn remove-insumo">X</button>
+    <label>Insumo existente
+      <select name="insumo_id[]">
+        <option value="">Seleccionar...</option>
+        <?php foreach ($insumos as $insumo): ?>
+          <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+    <p class="muted">Si no existe, cargalo abajo y se guarda automáticamente.</p>
+    <label>Nuevo insumo (opcional)
+      <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
+    </label>
+    <label>Unidad del nuevo insumo
+      <input type="text" name="insumo_unidad_nueva[]" value="unidad">
+    </label>
+    <label>Cantidad
+      <input type="number" step="0.01" min="0" name="cantidad[]" value="0">
+    </label>
+    <label>Costo unitario
+      <input type="number" step="0.01" min="0" name="costo_unitario[]" value="0">
+    </label>
+  </article>
+</template>
+
+<script>
+  (function () {
+    var container = document.getElementById('insumos-items');
+    var addButton = document.getElementById('agregar-insumo');
+    var template = document.getElementById('insumo-item-template');
+
+    function addItem() {
+      var node = template.content.cloneNode(true);
+      container.appendChild(node);
+    }
+
+    addButton.addEventListener('click', function () {
+      addItem();
+    });
+
+    container.addEventListener('click', function (event) {
+      if (!event.target.classList.contains('remove-insumo')) {
+        return;
+      }
+
+      var items = container.querySelectorAll('.insumo-item');
+      if (items.length <= 1) {
+        return;
+      }
+
+      var item = event.target.closest('.insumo-item');
+      if (item) {
+        item.remove();
+      }
+    });
+
+    addItem();
+  })();
+</script>
 <?php render_page_end();
