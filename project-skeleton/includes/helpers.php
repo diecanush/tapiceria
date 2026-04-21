@@ -19,7 +19,9 @@ function data_file(string $name): string
 
 function next_id(array $rows): int
 {
-    $ids = array_map(static fn(array $row): int => (int) ($row['id'] ?? 0), $rows);
+    $ids = array_map(static function (array $row): int {
+        return (int) ($row['id'] ?? 0);
+    }, $rows);
     $max = $ids === [] ? 0 : max($ids);
     return $max + 1;
 }
@@ -31,7 +33,21 @@ function h(?string $value): string
 
 function app_url(string $path = ''): string
 {
-    return $path === '' ? '' : '/' . ltrim($path, '/');
+    $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+    $baseDir = str_replace('\\', '/', dirname($scriptName));
+    $baseDir = rtrim($baseDir, '/');
+
+    if ($baseDir === '' || $baseDir === '.') {
+        $baseDir = '';
+    }
+
+    $normalizedPath = ltrim($path, '/');
+
+    if ($normalizedPath === '') {
+        return $baseDir === '' ? '/' : $baseDir . '/';
+    }
+
+    return ($baseDir === '' ? '' : $baseDir) . '/' . $normalizedPath;
 }
 
 function redirect_with_message(string $path, string $message): never
