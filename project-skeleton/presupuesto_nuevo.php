@@ -504,4 +504,4 @@ render_page_start('Presupuestos');
     addItem();
   })();
 </script>
-<?php render_page_end();
+<?php render_page_end(); ?>
