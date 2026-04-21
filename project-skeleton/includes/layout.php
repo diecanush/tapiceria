@@ -33,6 +33,8 @@ function render_page_end(): void
 {
     echo '</main></body></html>';
 function render_header(string $title): void
+    
 {
     echo "<h1>{$title}</h1>";
+}
 }
