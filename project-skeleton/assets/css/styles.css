@@ -36,17 +36,42 @@ button { background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
 button:hover { background: #1e40af; }
 .flash { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; padding: 10px; border-radius: 6px; }
 .muted { color: #6b7280; font-size: 13px; }
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 16px;
-  background: #f7f7f7;
+.secondary-btn {
+  margin-top: 8px;
+  background: #f3f4f6;
+  color: #111827;
 }
+.secondary-btn:hover { background: #e5e7eb; }
+.danger-btn {
+  width: auto;
+  background: #ef4444;
+  color: #fff;
+  padding: 6px 10px;
+  margin-left: auto;
+}
+.danger-btn:hover { background: #b91c1c; }
+.insumo-item {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.insumo-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mobile-cards { display: none; }
+.mobile-hidden { display: table; }
 
-.container {
-  max-width: 960px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 16px;
-  border-radius: 8px;
+@media (max-width: 640px) {
+  .mobile-hidden { display: none; }
+  .mobile-cards {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .container {
+    margin: 8px;
+    padding: 12px;
+  }
 }
