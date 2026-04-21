@@ -171,6 +171,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     write_json(data_file('insumos'), $insumos);
 
+    $insumosSeleccionados = $_POST['insumo_id'] ?? [];
+    $nombresNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
+    $cantidades = $_POST['cantidad'] ?? [];
+    $costosUnitarios = $_POST['costo_unitario'] ?? [];
+
+    if ($clienteId <= 0) {
+        redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
+    }
+
+    $insumosById = [];
+    foreach ($insumos as $insumo) {
+        $insumosById[(int) ($insumo['id'] ?? 0)] = $insumo;
+    }
+
+    $insumosEstimados = [];
+    $materiales = 0.0;
+
+    foreach ($insumosSeleccionados as $index => $insumoIdRaw) {
+        $insumoId = (int) $insumoIdRaw;
+        $nombreNuevo = trim((string) ($nombresNuevos[$index] ?? ''));
+        $cantidad = (float) ($cantidades[$index] ?? 0);
+        $costoUnitario = (float) ($costosUnitarios[$index] ?? 0);
+
+        if ($insumoId <= 0 && $nombreNuevo !== '') {
+            $existente = buscar_insumo_por_nombre($insumos, $nombreNuevo);
+            if ($existente !== null) {
+                $insumoId = (int) ($existente['id'] ?? 0);
+            } else {
+                $nuevoInsumo = [
+                    'id' => next_id($insumos),
+                    'nombre' => $nombreNuevo,
+                    'unidad' => 'unidad',
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                ];
+                $insumos[] = $nuevoInsumo;
+                $insumosById[(int) $nuevoInsumo['id']] = $nuevoInsumo;
+                $insumoId = (int) $nuevoInsumo['id'];
+            }
+        }
+
+        if ($insumoId <= 0 || $cantidad <= 0 || $costoUnitario < 0) {
+            continue;
+        }
+
+        if (!isset($insumosById[$insumoId])) {
+            continue;
+        }
+
+        $insumo = $insumosById[$insumoId];
+        $subtotalInsumo = $cantidad * $costoUnitario;
+        $materiales += $subtotalInsumo;
+
+        $insumosEstimados[] = [
+            'insumo_id' => $insumoId,
+            'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
+            'cantidad' => $cantidad,
+            'costo_unitario' => round($costoUnitario, 2),
+            'subtotal' => round($subtotalInsumo, 2),
+        ];
+    }
+
+    write_json(data_file('insumos'), $insumos);
+
     $subtotal = $manoObra + $materiales;
     $recargo = $subtotal * ($margen / 100);
     $base = $subtotal + $recargo;
@@ -223,6 +288,7 @@ render_page_start('Presupuestos');
 
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
+    <p class="muted"><strong>UI limpia v2026-04-21</strong></p>
     <p class="muted">3 renglones iniciales. Con + agregás uno. Con X eliminás un renglón.</p>
     <div id="insumos-items"></div>
     <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
@@ -375,6 +441,33 @@ render_page_start('Presupuestos');
   addItem();
   addItem();
   addItem();
+
+  // Limpieza defensiva por si quedó HTML legado duplicado en despliegues anteriores.
+  var fieldset = addButton.closest('fieldset');
+  if (fieldset) {
+    var extraButtons = fieldset.querySelectorAll('.secondary-btn');
+    extraButtons.forEach(function (button, index) {
+      if (index > 0) {
+        button.remove();
+      }
+    });
+
+    var legacyTables = fieldset.querySelectorAll('table');
+    legacyTables.forEach(function (table) {
+      table.remove();
+    });
+
+    var legacyTexts = fieldset.querySelectorAll('.muted');
+    legacyTexts.forEach(function (node) {
+      var text = (node.textContent || '').toLowerCase();
+      if (text.indexOf('completá solo las filas necesarias') >= 0 || text.indexOf('usá + para agregar filas') >= 0) {
+        node.remove();
+      }
+    });
+  }
+})();
+</script>
+<?php render_page_end(); ?>
 })();
   (function () {
     var container = document.getElementById('insumos-items');
