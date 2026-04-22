@@ -11,7 +11,9 @@ $pedidos = read_json(data_file('pedidos'));
 
 $stockBajo = array_filter(
     $insumos,
-    static fn(array $insumo): bool => (float) ($insumo['stock'] ?? 0) <= (float) ($insumo['stock_minimo'] ?? 0)
+    static function (array $insumo): bool {
+        return (float) ($insumo['stock'] ?? 0) <= (float) ($insumo['stock_minimo'] ?? 0);
+    }
 );
 
 render_page_start('Inicio');
@@ -24,7 +26,4 @@ render_page_start('Inicio');
   <article class="card"><h3>Trabajos en agenda</h3><div class="value"><?= count($pedidos) ?></div></article>
   <article class="card"><h3>Stock bajo</h3><div class="value"><?= count($stockBajo) ?></div></article>
 </section>
-<?php render_page_end();
-require_once __DIR__ . '/includes/bootstrap.php';
-render_header(app_title());
-echo '<p>Bienvenido al esqueleto del sistema.</p>';
+<?php render_page_end(); ?>
