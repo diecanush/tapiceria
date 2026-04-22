@@ -14,7 +14,14 @@ function data_dir(): string
 
 function data_file(string $name): string
 {
-    return data_dir() . '/' . $name . '.json';
+    $defaultFile = data_dir() . '/' . $name . '.json';
+    $localFile = data_dir() . '/' . $name . '.local.json';
+
+    if (is_file($localFile)) {
+        return $localFile;
+    }
+
+    return $defaultFile;
 }
 
 function next_id(array $rows): int
