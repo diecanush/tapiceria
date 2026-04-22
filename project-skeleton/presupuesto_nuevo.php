@@ -26,6 +26,57 @@ function find_insumo_by_name(array $insumos, string $name): ?array
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? 'create');
+
+    if ($action === 'delete') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $presupuestos = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($id): bool {
+            return (int) ($presupuesto['id'] ?? 0) !== $id;
+        }));
+        write_json(data_file('presupuestos'), $presupuestos);
+        redirect_with_message('presupuesto_nuevo.php', 'Presupuesto eliminado correctamente.');
+    }
+
+    if ($action === 'edit') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $clienteId = (int) ($_POST['cliente_id'] ?? 0);
+        $detalle = trim((string) ($_POST['detalle'] ?? ''));
+        $manoObra = (float) ($_POST['mano_obra'] ?? 0);
+        $margen = (float) ($_POST['margen'] ?? 0);
+        $estado = trim((string) ($_POST['estado'] ?? 'borrador'));
+        $impuesto = (float) ($config['impuesto'] ?? 0);
+
+        if ($id <= 0 || $clienteId <= 0) {
+            redirect_with_message('presupuesto_nuevo.php', 'Faltan datos obligatorios para editar el presupuesto.');
+        }
+
+        foreach ($presupuestos as &$presupuesto) {
+            if ((int) ($presupuesto['id'] ?? 0) !== $id) {
+                continue;
+            }
+
+            $materiales = (float) ($presupuesto['materiales'] ?? 0);
+            $subtotal = $manoObra + $materiales;
+            $recargo = $subtotal * ($margen / 100);
+            $base = $subtotal + $recargo;
+            $impuestos = $base * $impuesto;
+            $total = $base + $impuestos;
+
+            $presupuesto['cliente_id'] = $clienteId;
+            $presupuesto['detalle'] = $detalle;
+            $presupuesto['mano_obra'] = $manoObra;
+            $presupuesto['margen'] = $margen;
+            $presupuesto['impuesto'] = $impuesto;
+            $presupuesto['estado'] = $estado === '' ? 'borrador' : $estado;
+            $presupuesto['total'] = round($total, 2);
+            break;
+        }
+        unset($presupuesto);
+
+        write_json(data_file('presupuestos'), $presupuestos);
+        redirect_with_message('presupuesto_nuevo.php', 'Presupuesto actualizado correctamente.');
+    }
+
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
@@ -167,17 +218,44 @@ render_page_start('Presupuestos');
 </form>
 
 <table class="table">
-  <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Materiales</th><th>Total</th><th>Detalle</th></tr></thead>
+  <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Mano de obra</th><th>Margen %</th><th>Materiales</th><th>Total</th><th>Detalle</th><th>Acciones</th></tr></thead>
   <tbody>
   <?php foreach ($presupuestos as $presupuesto): ?>
     <tr>
-      <td><?= (int) ($presupuesto['id'] ?? 0) ?></td>
-      <td><?= h((string) ($presupuesto['fecha'] ?? '')) ?></td>
-      <td><?= h($clientesById[(int) ($presupuesto['cliente_id'] ?? 0)] ?? 'N/D') ?></td>
-      <td><?= h((string) ($presupuesto['estado'] ?? '')) ?></td>
-      <td><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></td>
-      <td><?= money((float) ($presupuesto['total'] ?? 0)) ?></td>
-      <td><?= h((string) ($presupuesto['detalle'] ?? '')) ?></td>
+      <form method="post">
+        <td>
+          <?= (int) ($presupuesto['id'] ?? 0) ?>
+          <input type="hidden" name="id" value="<?= (int) ($presupuesto['id'] ?? 0) ?>">
+        </td>
+        <td><?= h((string) ($presupuesto['fecha'] ?? '')) ?></td>
+        <td>
+          <select name="cliente_id" required>
+            <option value="">Seleccionar...</option>
+            <?php foreach ($clientes as $cliente): ?>
+              <option value="<?= (int) $cliente['id'] ?>" <?= (int) $cliente['id'] === (int) ($presupuesto['cliente_id'] ?? 0) ? 'selected' : '' ?>>
+                <?= h((string) $cliente['nombre']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </td>
+        <td>
+          <select name="estado">
+            <option value="borrador" <?= ($presupuesto['estado'] ?? 'borrador') === 'borrador' ? 'selected' : '' ?>>Borrador</option>
+            <option value="enviado" <?= ($presupuesto['estado'] ?? 'borrador') === 'enviado' ? 'selected' : '' ?>>Enviado</option>
+            <option value="aprobado" <?= ($presupuesto['estado'] ?? 'borrador') === 'aprobado' ? 'selected' : '' ?>>Aprobado</option>
+            <option value="rechazado" <?= ($presupuesto['estado'] ?? 'borrador') === 'rechazado' ? 'selected' : '' ?>>Rechazado</option>
+          </select>
+        </td>
+        <td><input type="number" step="0.01" min="0" name="mano_obra" value="<?= (float) ($presupuesto['mano_obra'] ?? 0) ?>"></td>
+        <td><input type="number" step="0.01" min="0" name="margen" value="<?= (float) ($presupuesto['margen'] ?? 0) ?>"></td>
+        <td><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></td>
+        <td><?= money((float) ($presupuesto['total'] ?? 0)) ?></td>
+        <td><input type="text" name="detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>"></td>
+        <td style="display:flex;gap:6px;">
+          <button type="submit" name="action" value="edit" class="secondary-btn">Guardar</button>
+          <button type="submit" name="action" value="delete" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto?');">Borrar</button>
+        </td>
+      </form>
     </tr>
   <?php endforeach; ?>
   </tbody>
