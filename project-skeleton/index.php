@@ -11,7 +11,9 @@ $pedidos = read_json(data_file('pedidos'));
 
 $stockBajo = array_filter(
     $insumos,
-    static fn(array $insumo): bool => (float) ($insumo['stock'] ?? 0) <= (float) ($insumo['stock_minimo'] ?? 0)
+    static function (array $insumo): bool {
+        return (float) ($insumo['stock'] ?? 0) <= (float) ($insumo['stock_minimo'] ?? 0);
+    }
 );
 
 render_page_start('Inicio');
