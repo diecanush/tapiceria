@@ -153,6 +153,13 @@ render_page_start('Presupuestos');
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
     <p class="muted">3 renglones iniciales. Botón + para agregar y X para eliminar.</p>
+    <div class="insumo-row insumo-row-head">
+      <strong>Insumo existente</strong>
+      <strong>Insumo nuevo (opcional)</strong>
+      <strong>Cantidad</strong>
+      <strong>Costo unitario</strong>
+      <span></span>
+    </div>
     <div id="insumos-items"></div>
     <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
   </fieldset>
@@ -178,33 +185,19 @@ render_page_start('Presupuestos');
 </table>
 
 <template id="insumo-item-template">
-  <article class="card insumo-item">
-    <div class="insumo-item-head">
-      <strong>Insumo</strong>
-      <button type="button" class="danger-btn insumo-remove remove-insumo">X</button>
-    </div>
+  <div class="insumo-row insumo-item">
+    <select name="insumo_id[]">
+      <option value="">Seleccionar...</option>
+      <?php foreach ($insumos as $insumo): ?>
+        <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+      <?php endforeach; ?>
+    </select>
 
-    <label>Insumo existente (opcional)
-      <select name="insumo_id[]">
-        <option value="">Seleccionar...</option>
-        <?php foreach ($insumos as $insumo): ?>
-          <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
-        <?php endforeach; ?>
-      </select>
-    </label>
-
-    <label>Si no existe, escribí insumo nuevo
-      <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
-    </label>
-
-    <label>Cantidad
-      <input type="number" step="0.01" min="0" name="cantidad[]" value="0">
-    </label>
-
-    <label>Costo unitario
-      <input type="number" step="0.01" min="0" name="costo_unitario[]" value="0">
-    </label>
-  </article>
+    <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
+    <input type="number" step="0.01" min="0" name="cantidad[]" value="0">
+    <input type="number" step="0.01" min="0" name="costo_unitario[]" value="0">
+    <button type="button" class="danger-btn insumo-remove remove-insumo" aria-label="Eliminar insumo">X</button>
+  </div>
 </template>
 
 <script>

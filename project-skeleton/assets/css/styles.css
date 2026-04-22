@@ -46,24 +46,36 @@ button:hover { background: #1e40af; }
   width: auto;
   background: #ef4444;
   color: #fff;
-  padding: 6px 10px;
+  padding: 4px 8px;
   margin-left: auto;
 }
 .danger-btn:hover { background: #b91c1c; }
 .insumo-remove {
   width: auto !important;
-  min-width: 36px;
-  padding: 6px 10px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  font-weight: 700;
+  line-height: 1;
 }
 .insumo-item {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .insumo-item-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.insumo-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(180px, 2fr) minmax(90px, 1fr) minmax(120px, 1fr) 36px;
+  gap: 8px;
+  align-items: center;
+}
+.insumo-row-head {
+  margin: 6px 0;
+  color: #374151;
+  font-size: 13px;
 }
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
@@ -78,5 +90,14 @@ button:hover { background: #1e40af; }
   .container {
     margin: 8px;
     padding: 12px;
+  }
+  .insumo-row {
+    grid-template-columns: 1fr;
+  }
+  .insumo-row-head {
+    display: none;
+  }
+  .insumo-remove {
+    justify-self: end;
   }
 }
