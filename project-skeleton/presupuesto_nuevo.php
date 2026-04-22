@@ -153,14 +153,14 @@ render_page_start('Presupuestos');
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
     <p class="muted">3 renglones iniciales. Botón + para agregar y X para eliminar.</p>
-    <div class="insumo-row insumo-row-head">
+    <div class="insumo-row insumo-row-head" style="display:grid;grid-template-columns:minmax(180px,2fr) minmax(180px,2fr) 110px 130px 36px;gap:8px;align-items:center;min-width:640px;">
       <strong>Insumo existente</strong>
       <strong>Insumo nuevo (opcional)</strong>
       <strong>Cantidad</strong>
       <strong>Costo unitario</strong>
       <span></span>
     </div>
-    <div id="insumos-items"></div>
+    <div id="insumos-items" style="overflow-x:auto;padding-bottom:4px;"></div>
     <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
   </fieldset>
 
@@ -185,7 +185,7 @@ render_page_start('Presupuestos');
 </table>
 
 <template id="insumo-item-template">
-  <div class="insumo-row insumo-item">
+  <div class="insumo-row insumo-item" style="display:grid;grid-template-columns:minmax(180px,2fr) minmax(180px,2fr) 110px 130px 36px;gap:8px;align-items:center;min-width:640px;margin-bottom:8px;">
     <select name="insumo_id[]">
       <option value="">Seleccionar...</option>
       <?php foreach ($insumos as $insumo): ?>
@@ -194,9 +194,9 @@ render_page_start('Presupuestos');
     </select>
 
     <input type="text" name="insumo_nombre_nuevo[]" placeholder="Ej: Cinta elástica">
-    <input type="number" step="0.01" min="0" name="cantidad[]" value="0">
-    <input type="number" step="0.01" min="0" name="costo_unitario[]" value="0">
-    <button type="button" class="danger-btn insumo-remove remove-insumo" aria-label="Eliminar insumo">X</button>
+    <input type="number" step="0.01" min="0" name="cantidad[]" value="0" style="width:100%;">
+    <input type="number" step="0.01" min="0" name="costo_unitario[]" value="0" style="width:100%;">
+    <button type="button" class="danger-btn insumo-remove remove-insumo" aria-label="Eliminar insumo" style="width:30px;height:30px;padding:0;line-height:1;justify-self:center;">X</button>
   </div>
 </template>
 
