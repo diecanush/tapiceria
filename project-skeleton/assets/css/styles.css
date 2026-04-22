@@ -66,16 +66,27 @@ button:hover { background: #1e40af; }
   align-items: center;
   justify-content: space-between;
 }
+#insumos-items {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
 .insumo-row {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(180px, 2fr) minmax(90px, 1fr) minmax(120px, 1fr) 36px;
+  grid-template-columns: minmax(180px, 2fr) minmax(180px, 2fr) 110px 130px 36px;
   gap: 8px;
   align-items: center;
+  min-width: 640px;
 }
 .insumo-row-head {
   margin: 6px 0;
   color: #374151;
   font-size: 13px;
+}
+.insumo-row input[type="number"] {
+  width: 100%;
+}
+.insumo-row .insumo-remove {
+  justify-self: center;
 }
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
@@ -90,12 +101,6 @@ button:hover { background: #1e40af; }
   .container {
     margin: 8px;
     padding: 12px;
-  }
-  .insumo-row {
-    grid-template-columns: 1fr;
-  }
-  .insumo-row-head {
-    display: none;
   }
   .insumo-remove {
     justify-self: end;
