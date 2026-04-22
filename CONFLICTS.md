@@ -46,3 +46,25 @@ git merge origin/main
 ```
 
 y resolvés conflictos igual (eligiendo los archivos del PR donde corresponda).
+
+## Si NO tenés repo local (solo GitHub web)
+
+1. Abrí el PR y hacé click en **Resolve conflicts**.
+2. Para cada archivo en conflicto dentro de `project-skeleton/`:
+   - buscá los bloques marcados con:
+     - `<<<<<<<`
+     - `=======`
+     - `>>>>>>>`
+   - conservá la versión del PR (la que contiene:
+     - estimación de insumos en `presupuesto_nuevo.php`,
+     - `app_url()` corregido en `includes/helpers.php`,
+     - limpieza de `render_page_end()` en `index.php`, `agenda.php`, `insumos.php`, `clientes.php`).
+3. Eliminá todos los marcadores de conflicto.
+4. Click en **Mark as resolved** archivo por archivo.
+5. Click en **Commit merge**.
+6. Volvé al PR y completá el merge.
+
+Si GitHub no deja resolver por UI, la alternativa es:
+- Crear un branch nuevo desde el branch del PR.
+- Editar directamente esos archivos con el contenido final correcto.
+- Abrir un PR nuevo limpio.
