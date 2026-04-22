@@ -16,3 +16,12 @@ README.md
 TASKS.md
 QA_CHECKLIST.md
 ```
+
+## Datos locales que no se pisan al actualizar
+
+Para mantener tus datos cargados al actualizar la rama:
+
+1. Copiá los JSON base de `project-skeleton/data/` a archivos `*.local.json`.
+   - Ejemplo: `clientes.json` -> `clientes.local.json`
+2. La app prioriza automáticamente `*.local.json` si existe.
+3. Esos archivos locales no se versionan (`.gitignore`).

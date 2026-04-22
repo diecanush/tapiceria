@@ -34,7 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect_with_message('agenda.php', 'Trabajo agendado correctamente.');
 }
 
-usort($pedidos, static fn(array $a, array $b): int => strcmp((string) ($a['fecha'] ?? ''), (string) ($b['fecha'] ?? '')));
+usort($pedidos, static function (array $a, array $b): int {
+    return strcmp((string) ($a['fecha'] ?? ''), (string) ($b['fecha'] ?? ''));
+});
 
 render_page_start('Agenda');
 ?>
@@ -78,6 +80,4 @@ render_page_start('Agenda');
   <?php endforeach; ?>
   </tbody>
 </table>
-<?php render_page_end();
-require_once __DIR__ . '/includes/bootstrap.php';
-render_header('Agenda');
+<?php render_page_end(); ?>
