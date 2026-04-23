@@ -88,6 +88,39 @@ button:hover { background: #1e40af; }
 .insumo-row .insumo-remove {
   justify-self: center;
 }
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dialog-form {
+  display: grid;
+  gap: 10px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.piece-grid-head,
+.piece-grid-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 1fr)) 36px;
+  gap: 8px;
+  align-items: center;
+}
+.piece-grid-head {
+  color: #374151;
+  font-size: 13px;
+}
+.assistant-result {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+}
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 
