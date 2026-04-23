@@ -32,6 +32,18 @@ body {
 input, select, button {
   width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;
 }
+a.secondary-btn,
+a.info-btn,
+a.excel-btn,
+a.action-link {
+  width: auto;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
 button { background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
 button:hover { background: #1e40af; }
 .flash { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; padding: 10px; border-radius: 6px; }
@@ -42,6 +54,21 @@ button:hover { background: #1e40af; }
   color: #111827;
 }
 .secondary-btn:hover { background: #e5e7eb; }
+.assistant-btn {
+  background: #ede9fe;
+  color: #4c1d95;
+}
+.assistant-btn:hover { background: #ddd6fe; }
+.info-btn {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+.info-btn:hover { background: #bfdbfe; }
+.excel-btn {
+  background: #dcfce7;
+  color: #166534;
+}
+.excel-btn:hover { background: #bbf7d0; }
 .danger-btn {
   width: auto;
   background: #ef4444;
@@ -88,10 +115,54 @@ button:hover { background: #1e40af; }
 .insumo-row .insumo-remove {
   justify-self: center;
 }
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dialog-form {
+  display: grid;
+  gap: 10px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.piece-grid-head,
+.piece-grid-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 1fr)) 36px;
+  gap: 8px;
+  align-items: center;
+}
+.piece-grid-head {
+  color: #374151;
+  font-size: 13px;
+}
+.assistant-result {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+}
+.action-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.actions-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .mobile-hidden { display: none; }
   .mobile-cards {
     display: grid;
@@ -104,5 +175,26 @@ button:hover { background: #1e40af; }
   }
   .insumo-remove {
     justify-self: end;
+  }
+  .actions-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .actions-wrap .action-link,
+  .actions-wrap button {
+    width: 100%;
+  }
+  .inline-actions .secondary-btn,
+  .inline-actions .action-link {
+    width: 100%;
+  }
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .piece-grid-head,
+  .piece-grid-row {
+    grid-template-columns: 1fr;
   }
 }
