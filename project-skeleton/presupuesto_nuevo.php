@@ -7,6 +7,10 @@ $clientes = read_json(data_file('clientes'));
 $insumos = read_json(data_file('insumos'));
 $config = read_json(data_file('config'));
 $presupuestos = read_json(data_file('presupuestos'));
+$clientesById = [];
+foreach ($clientes as $cliente) {
+    $clientesById[(int) ($cliente['id'] ?? 0)] = (string) ($cliente['nombre'] ?? '');
+}
 
 function find_insumo_by_name(array $insumos, string $name): ?array
 {
@@ -23,6 +27,66 @@ function find_insumo_by_name(array $insumos, string $name): ?array
     }
 
     return null;
+}
+
+function find_presupuesto_by_id(array $presupuestos, int $id): ?array
+{
+    foreach ($presupuestos as $presupuesto) {
+        if ((int) ($presupuesto['id'] ?? 0) === $id) {
+            return $presupuesto;
+        }
+    }
+
+    return null;
+}
+
+function export_presupuestos_csv(array $presupuestos, array $clientesById, ?int $onlyId = null): void
+{
+    $filename = $onlyId === null ? 'presupuestos.csv' : 'presupuesto_' . $onlyId . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    $output = fopen('php://output', 'wb');
+    if ($output === false) {
+        exit;
+    }
+
+    fputcsv($output, ['ID', 'Fecha', 'Cliente', 'Estado', 'Detalle', 'Mano de obra', 'Materiales', 'Margen %', 'Impuesto', 'Total', 'Insumos']);
+
+    foreach ($presupuestos as $presupuesto) {
+        $id = (int) ($presupuesto['id'] ?? 0);
+        if ($onlyId !== null && $id !== $onlyId) {
+            continue;
+        }
+
+        $items = $presupuesto['insumos_estimados'] ?? [];
+        $itemsText = [];
+        foreach ($items as $item) {
+            $itemsText[] = (string) ($item['nombre'] ?? 'Insumo') . ' x ' . (string) ($item['cantidad'] ?? 0) . ' (' . (string) ($item['unidad'] ?? 'unidad') . ')';
+        }
+
+        fputcsv($output, [
+            $id,
+            (string) ($presupuesto['fecha'] ?? ''),
+            (string) ($clientesById[(int) ($presupuesto['cliente_id'] ?? 0)] ?? 'Cliente eliminado'),
+            (string) ($presupuesto['estado'] ?? 'borrador'),
+            (string) ($presupuesto['detalle'] ?? ''),
+            (float) ($presupuesto['mano_obra'] ?? 0),
+            (float) ($presupuesto['materiales'] ?? 0),
+            (float) ($presupuesto['margen'] ?? 0),
+            (float) ($presupuesto['impuesto'] ?? 0),
+            (float) ($presupuesto['total'] ?? 0),
+            implode(' | ', $itemsText),
+        ]);
+    }
+
+    fclose($output);
+    exit;
+}
+
+if (($_GET['export'] ?? '') === 'csv') {
+    $exportId = isset($_GET['id']) ? (int) $_GET['id'] : null;
+    export_presupuestos_csv($presupuestos, $clientesById, $exportId);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -172,10 +236,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect_with_message('presupuesto_nuevo.php', 'Presupuesto creado en estado borrador.');
 }
 
-$clientesById = [];
-foreach ($clientes as $cliente) {
-    $clientesById[(int) ($cliente['id'] ?? 0)] = (string) ($cliente['nombre'] ?? '');
-}
+$verPresupuestoId = (int) ($_GET['ver'] ?? 0);
+$presupuestoDetalle = $verPresupuestoId > 0 ? find_presupuesto_by_id($presupuestos, $verPresupuestoId) : null;
 
 render_page_start('Presupuestos');
 ?>
@@ -213,7 +275,8 @@ render_page_start('Presupuestos');
     <div id="insumos-items" style="overflow-x:auto;padding-bottom:4px;"></div>
     <div class="inline-actions">
       <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
-      <button type="button" id="abrir-asistente-insumo" class="secondary-btn">Asistente de insumos</button>
+      <button type="button" id="abrir-asistente-insumo" class="secondary-btn assistant-btn">Asistente de insumos</button>
+      <a href="presupuesto_nuevo.php?export=csv" class="secondary-btn excel-btn action-link">Exportar presupuestos (Excel)</a>
     </div>
   </fieldset>
 
@@ -254,7 +317,9 @@ render_page_start('Presupuestos');
         <td><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></td>
         <td><?= money((float) ($presupuesto['total'] ?? 0)) ?></td>
         <td><input type="text" name="detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>"></td>
-        <td style="display:flex;gap:6px;">
+        <td class="actions-wrap">
+          <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
+          <a href="presupuesto_nuevo.php?export=csv&id=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn excel-btn action-link">Excel</a>
           <button type="submit" name="action" value="edit" class="secondary-btn">Guardar</button>
           <button type="submit" name="action" value="delete" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto?');">Borrar</button>
         </td>
@@ -263,6 +328,42 @@ render_page_start('Presupuestos');
   <?php endforeach; ?>
   </tbody>
 </table>
+
+<?php if ($presupuestoDetalle !== null): ?>
+  <section class="card" style="margin-top:16px;">
+    <h3 style="margin-top:0;">Detalle del presupuesto #<?= (int) ($presupuestoDetalle['id'] ?? 0) ?></h3>
+    <p><strong>Cliente:</strong> <?= h((string) ($clientesById[(int) ($presupuestoDetalle['cliente_id'] ?? 0)] ?? 'Cliente eliminado')) ?></p>
+    <p><strong>Fecha:</strong> <?= h((string) ($presupuestoDetalle['fecha'] ?? '')) ?></p>
+    <p><strong>Estado:</strong> <?= h((string) ($presupuestoDetalle['estado'] ?? 'borrador')) ?></p>
+    <p><strong>Detalle:</strong> <?= h((string) ($presupuestoDetalle['detalle'] ?? '')) ?></p>
+    <p><strong>Mano de obra:</strong> <?= money((float) ($presupuestoDetalle['mano_obra'] ?? 0)) ?></p>
+    <p><strong>Materiales:</strong> <?= money((float) ($presupuestoDetalle['materiales'] ?? 0)) ?></p>
+    <p><strong>Total:</strong> <?= money((float) ($presupuestoDetalle['total'] ?? 0)) ?></p>
+    <h4>Insumos estimados</h4>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Insumo</th>
+          <th>Cantidad</th>
+          <th>Unidad</th>
+          <th>Costo unitario</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach (($presupuestoDetalle['insumos_estimados'] ?? []) as $item): ?>
+        <tr>
+          <td><?= h((string) ($item['nombre'] ?? 'Insumo')) ?></td>
+          <td><?= (float) ($item['cantidad'] ?? 0) ?></td>
+          <td><?= h((string) ($item['unidad'] ?? 'unidad')) ?></td>
+          <td><?= money((float) ($item['costo_unitario'] ?? 0)) ?></td>
+          <td><?= money((float) ($item['subtotal'] ?? 0)) ?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </section>
+<?php endif; ?>
 
 <template id="insumo-item-template">
   <div class="insumo-row insumo-item" style="display:grid;grid-template-columns:minmax(260px,2fr) 110px 130px 36px;gap:8px;align-items:center;min-width:560px;margin-bottom:8px;">
