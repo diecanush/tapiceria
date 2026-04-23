@@ -211,7 +211,10 @@ render_page_start('Presupuestos');
       <span></span>
     </div>
     <div id="insumos-items" style="overflow-x:auto;padding-bottom:4px;"></div>
-    <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
+    <div class="inline-actions">
+      <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
+      <button type="button" id="abrir-asistente-insumo" class="secondary-btn">Asistente de insumos</button>
+    </div>
   </fieldset>
 
   <div><button type="submit">Crear presupuesto</button></div>
@@ -294,27 +297,332 @@ render_page_start('Presupuestos');
   </form>
 </dialog>
 
+<dialog id="asistente-insumo-modal" style="border:1px solid #d1d5db;border-radius:8px;max-width:740px;width:95%;padding:14px;">
+  <form method="dialog" id="asistente-insumo-form" class="dialog-form">
+    <h3 style="margin:0;">Asistente de insumos</h3>
+    <p class="muted" style="margin:0;">Calcula cantidad sugerida en base a piezas y tipo de insumo.</p>
+
+    <div class="form-grid">
+      <label>Tipo de insumo
+        <select id="asistente-tipo-insumo">
+          <option value="tela">Tela</option>
+          <option value="gomaespuma">Gomaespuma</option>
+          <option value="fleje">Fleje</option>
+          <option value="cierre">Cierre</option>
+        </select>
+      </label>
+
+      <label>Insumo existente (opcional)
+        <select id="asistente-insumo-id">
+          <option value="">Seleccionar...</option>
+          <?php foreach ($insumos as $insumo): ?>
+            <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+
+      <label>Nombre de insumo nuevo (opcional)
+        <input type="text" id="asistente-insumo-nuevo" placeholder="Ej: Tela chenille beige">
+      </label>
+
+      <label>Costo unitario sugerido
+        <input type="number" id="asistente-costo-unitario" min="0" step="0.01" value="0">
+      </label>
+    </div>
+
+    <fieldset>
+      <legend>Piezas a cortar</legend>
+      <div class="piece-grid-head">
+        <strong>Alto (cm)</strong>
+        <strong>Ancho (cm)</strong>
+        <strong>Cantidad</strong>
+        <span></span>
+      </div>
+      <div id="asistente-piezas"></div>
+      <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Parámetros por tipo</legend>
+      <div class="form-grid">
+        <label data-param-for="tela">Ancho de tela (cm)
+          <input type="number" id="asistente-tela-ancho" min="1" step="0.01" value="140">
+        </label>
+        <label data-param-for="tela gomaespuma">Desperdicio (%)
+          <input type="number" id="asistente-desperdicio" min="0" step="0.01" value="10">
+        </label>
+
+        <label data-param-for="gomaespuma">Ancho de plancha (cm)
+          <input type="number" id="asistente-plancha-ancho" min="1" step="0.01" value="200">
+        </label>
+        <label data-param-for="gomaespuma">Largo de plancha (cm)
+          <input type="number" id="asistente-plancha-largo" min="1" step="0.01" value="100">
+        </label>
+
+        <label data-param-for="fleje">Separación entre flejes (cm)
+          <input type="number" id="asistente-fleje-separacion" min="1" step="0.01" value="8">
+        </label>
+
+        <label data-param-for="cierre">Margen por cierre (cm)
+          <input type="number" id="asistente-cierre-margen" min="0" step="0.01" value="5">
+        </label>
+      </div>
+    </fieldset>
+
+    <div id="asistente-resultado" class="assistant-result"></div>
+
+    <div class="dialog-actions">
+      <button type="button" id="cancelar-asistente-insumo" class="secondary-btn" style="margin-top:0;">Cancelar</button>
+      <button type="button" id="calcular-asistente-insumo" class="secondary-btn" style="margin-top:0;">Calcular</button>
+      <button type="submit">Agregar renglón</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 (function () {
   var container = document.getElementById('insumos-items');
   var addButton = document.getElementById('agregar-insumo');
+  var assistantButton = document.getElementById('abrir-asistente-insumo');
   var template = document.getElementById('insumo-item-template');
   var modal = document.getElementById('nuevo-insumo-modal');
   var modalForm = document.getElementById('nuevo-insumo-form');
   var modalInput = document.getElementById('nuevo-insumo-nombre');
   var modalCancel = document.getElementById('cancelar-nuevo-insumo');
+  var assistantModal = document.getElementById('asistente-insumo-modal');
+  var assistantForm = document.getElementById('asistente-insumo-form');
+  var assistantType = document.getElementById('asistente-tipo-insumo');
+  var assistantInsumoId = document.getElementById('asistente-insumo-id');
+  var assistantInsumoNuevo = document.getElementById('asistente-insumo-nuevo');
+  var assistantCosto = document.getElementById('asistente-costo-unitario');
+  var assistantPieces = document.getElementById('asistente-piezas');
+  var assistantAddPiece = document.getElementById('agregar-pieza-asistente');
+  var assistantCalculate = document.getElementById('calcular-asistente-insumo');
+  var assistantCancel = document.getElementById('cancelar-asistente-insumo');
+  var assistantResult = document.getElementById('asistente-resultado');
   var pendingRow = null;
+  var lastAssistantResult = null;
 
-  if (!container || !addButton || !template) {
+  if (!container || !addButton || !assistantButton || !template) {
     return;
   }
 
   function addItem() {
-    container.appendChild(template.content.cloneNode(true));
+    var node = template.content.cloneNode(true);
+    container.appendChild(node);
+    return container.lastElementChild;
+  }
+
+  function applyInsumoSelectionToRow(row, insumoId, insumoNuevo) {
+    var hiddenInput = row.querySelector('.insumo-nuevo-hidden');
+    var label = row.querySelector('.insumo-nuevo-label');
+    var select = row.querySelector('.insumo-select');
+    if (!hiddenInput || !label || !select) {
+      return;
+    }
+
+    if (insumoId !== '') {
+      select.value = insumoId;
+      hiddenInput.value = '';
+      label.textContent = '';
+      return;
+    }
+
+    if (insumoNuevo !== '') {
+      hiddenInput.value = insumoNuevo;
+      label.textContent = 'Nuevo: ' + insumoNuevo;
+      select.value = '';
+      return;
+    }
+
+    select.value = '';
+    hiddenInput.value = '';
+    label.textContent = '';
+  }
+
+  function parseNumber(input, defaultValue) {
+    var value = parseFloat(input);
+    return Number.isFinite(value) ? value : defaultValue;
+  }
+
+  function addAssistantPiece(values) {
+    var row = document.createElement('div');
+    row.className = 'piece-grid-row';
+    row.innerHTML = ''
+      + '<input type="number" class="pieza-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
+      + '<input type="number" class="pieza-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
+      + '<input type="number" class="pieza-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
+      + '<button type="button" class="danger-btn remove-pieza" style="width:30px;height:30px;padding:0;">X</button>';
+    assistantPieces.appendChild(row);
+  }
+
+  function updateAssistantTypeFields() {
+    var type = assistantType.value;
+    document.querySelectorAll('[data-param-for]').forEach(function (node) {
+      var modes = node.getAttribute('data-param-for').split(/\s+/);
+      node.style.display = modes.indexOf(type) >= 0 ? '' : 'none';
+    });
+  }
+
+  function readPieces() {
+    var rows = Array.prototype.slice.call(assistantPieces.querySelectorAll('.piece-grid-row'));
+    var result = [];
+    rows.forEach(function (row) {
+      var alto = parseNumber(row.querySelector('.pieza-alto').value, 0);
+      var ancho = parseNumber(row.querySelector('.pieza-ancho').value, 0);
+      var cantidad = Math.max(1, Math.round(parseNumber(row.querySelector('.pieza-cantidad').value, 1)));
+      if (alto <= 0 || ancho <= 0 || cantidad <= 0) {
+        return;
+      }
+      result.push({
+        alto: alto,
+        ancho: ancho,
+        cantidad: cantidad
+      });
+    });
+    return result;
+  }
+
+  function expandPieces(pieces) {
+    var expanded = [];
+    pieces.forEach(function (piece) {
+      for (var i = 0; i < piece.cantidad; i += 1) {
+        expanded.push({ alto: piece.alto, ancho: piece.ancho });
+      }
+    });
+    return expanded;
+  }
+
+  function computeTela(pieces) {
+    var width = parseNumber(document.getElementById('asistente-tela-ancho').value, 140);
+    var waste = Math.max(0, parseNumber(document.getElementById('asistente-desperdicio').value, 0));
+    var expanded = expandPieces(pieces).sort(function (a, b) {
+      return b.ancho - a.ancho;
+    });
+    if (expanded.length === 0) {
+      return null;
+    }
+    var rows = [];
+    expanded.forEach(function (piece) {
+      var placed = false;
+      for (var i = 0; i < rows.length; i += 1) {
+        if (rows[i].used + piece.ancho <= width) {
+          rows[i].used += piece.ancho;
+          rows[i].height = Math.max(rows[i].height, piece.alto);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        rows.push({ used: piece.ancho, height: piece.alto });
+      }
+    });
+    var largoCm = rows.reduce(function (acc, row) {
+      return acc + row.height;
+    }, 0);
+    var totalM = (largoCm / 100) * (1 + (waste / 100));
+    return {
+      cantidad: Math.round(totalM * 100) / 100,
+      detalle: 'Largo estimado: ' + (Math.round(largoCm) / 100).toFixed(2) + ' m. Filas usadas: ' + rows.length + '.',
+      unidad: 'm'
+    };
+  }
+
+  function computeGomaespuma(pieces) {
+    var boardWidth = parseNumber(document.getElementById('asistente-plancha-ancho').value, 200);
+    var boardLength = parseNumber(document.getElementById('asistente-plancha-largo').value, 100);
+    var waste = Math.max(0, parseNumber(document.getElementById('asistente-desperdicio').value, 0));
+    var areaBoards = boardWidth * boardLength;
+    if (areaBoards <= 0) {
+      return null;
+    }
+    var totalArea = pieces.reduce(function (acc, piece) {
+      return acc + (piece.alto * piece.ancho * piece.cantidad);
+    }, 0);
+    var withWaste = totalArea * (1 + waste / 100);
+    var boards = Math.ceil(withWaste / areaBoards);
+    return {
+      cantidad: boards,
+      detalle: 'Área total con desperdicio: ' + Math.round(withWaste) + ' cm².',
+      unidad: 'planchas'
+    };
+  }
+
+  function computeFleje(pieces) {
+    var separation = Math.max(1, parseNumber(document.getElementById('asistente-fleje-separacion').value, 8));
+    var totalCm = 0;
+    pieces.forEach(function (piece) {
+      var flejesPorPieza = Math.max(1, Math.floor(piece.ancho / separation) + 1);
+      totalCm += flejesPorPieza * piece.alto * piece.cantidad;
+    });
+    return {
+      cantidad: Math.round((totalCm / 100) * 100) / 100,
+      detalle: 'Separación usada: ' + separation + ' cm.',
+      unidad: 'm'
+    };
+  }
+
+  function computeCierre(pieces) {
+    var margin = Math.max(0, parseNumber(document.getElementById('asistente-cierre-margen').value, 5));
+    var totalCm = pieces.reduce(function (acc, piece) {
+      var perimetro = 2 * (piece.alto + piece.ancho);
+      return acc + ((perimetro + margin) * piece.cantidad);
+    }, 0);
+    return {
+      cantidad: Math.round((totalCm / 100) * 100) / 100,
+      detalle: 'Incluye margen adicional de ' + margin + ' cm por pieza.',
+      unidad: 'm'
+    };
+  }
+
+  function calculateAssistant() {
+    var type = assistantType.value;
+    var pieces = readPieces();
+    if (pieces.length === 0) {
+      assistantResult.textContent = 'Cargá al menos una pieza válida para calcular.';
+      lastAssistantResult = null;
+      return null;
+    }
+
+    var calculated = null;
+    if (type === 'tela') {
+      calculated = computeTela(pieces);
+    } else if (type === 'gomaespuma') {
+      calculated = computeGomaespuma(pieces);
+    } else if (type === 'fleje') {
+      calculated = computeFleje(pieces);
+    } else if (type === 'cierre') {
+      calculated = computeCierre(pieces);
+    }
+
+    if (!calculated || calculated.cantidad <= 0) {
+      assistantResult.textContent = 'No se pudo calcular con los valores actuales.';
+      lastAssistantResult = null;
+      return null;
+    }
+
+    lastAssistantResult = calculated;
+    assistantResult.textContent = 'Cantidad sugerida: ' + calculated.cantidad + ' ' + calculated.unidad + ' | ' + calculated.detalle;
+    return calculated;
   }
 
   addButton.addEventListener('click', function () {
     addItem();
+  });
+
+  assistantButton.addEventListener('click', function () {
+    assistantInsumoId.value = '';
+    assistantInsumoNuevo.value = '';
+    assistantCosto.value = '0';
+    assistantPieces.innerHTML = '';
+    addAssistantPiece({ alto: 60, ancho: 60, cantidad: 1 });
+    assistantType.value = 'tela';
+    updateAssistantTypeFields();
+    assistantResult.textContent = 'Completá los datos y presioná "Calcular".';
+    lastAssistantResult = null;
+    if (typeof assistantModal.showModal === 'function') {
+      assistantModal.showModal();
+    }
   });
 
   container.addEventListener('click', function (event) {
@@ -382,9 +690,62 @@ render_page_start('Presupuestos');
     modal.close();
   });
 
+  assistantType.addEventListener('change', updateAssistantTypeFields);
+
+  assistantAddPiece.addEventListener('click', function () {
+    addAssistantPiece({ alto: 0, ancho: 0, cantidad: 1 });
+  });
+
+  assistantPieces.addEventListener('click', function (event) {
+    if (!event.target.classList.contains('remove-pieza')) {
+      return;
+    }
+    var row = event.target.closest('.piece-grid-row');
+    if (row) {
+      row.remove();
+    }
+  });
+
+  assistantCalculate.addEventListener('click', function () {
+    calculateAssistant();
+  });
+
+  assistantCancel.addEventListener('click', function () {
+    assistantModal.close();
+  });
+
+  assistantForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var calculation = calculateAssistant();
+    if (!calculation) {
+      return;
+    }
+
+    var selectedId = assistantInsumoId.value;
+    var newName = assistantInsumoNuevo.value.trim();
+    if (selectedId === '' && newName === '') {
+      assistantResult.textContent = 'Seleccioná un insumo existente o cargá un nombre de insumo nuevo.';
+      return;
+    }
+
+    var row = addItem();
+    applyInsumoSelectionToRow(row, selectedId, newName);
+    var cantidadInput = row.querySelector('input[name="cantidad[]"]');
+    var costoInput = row.querySelector('input[name="costo_unitario[]"]');
+    if (cantidadInput) {
+      cantidadInput.value = calculation.cantidad;
+    }
+    if (costoInput) {
+      costoInput.value = parseNumber(assistantCosto.value, 0).toFixed(2);
+    }
+
+    assistantModal.close();
+  });
+
   addItem();
   addItem();
   addItem();
+  updateAssistantTypeFields();
 })();
 </script>
 <?php render_page_end(); ?>
