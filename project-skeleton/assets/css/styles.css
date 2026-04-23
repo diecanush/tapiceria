@@ -32,6 +32,18 @@ body {
 input, select, button {
   width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;
 }
+a.secondary-btn,
+a.info-btn,
+a.excel-btn,
+a.action-link {
+  width: auto;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
 button { background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
 button:hover { background: #1e40af; }
 .flash { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; padding: 10px; border-radius: 6px; }
@@ -150,7 +162,7 @@ button:hover { background: #1e40af; }
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .mobile-hidden { display: none; }
   .mobile-cards {
     display: grid;
@@ -175,6 +187,11 @@ button:hover { background: #1e40af; }
   .inline-actions .secondary-btn,
   .inline-actions .action-link {
     width: 100%;
+  }
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
   .piece-grid-head,
   .piece-grid-row {
