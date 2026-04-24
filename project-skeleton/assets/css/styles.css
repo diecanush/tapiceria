@@ -163,6 +163,31 @@ button:hover { background: #1e40af; }
 .mobile-hidden { display: table; }
 
 @media (max-width: 768px) {
+  dialog {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px auto;
+    padding: 10px !important;
+  }
+  #asistente-insumo-modal,
+  #nuevo-insumo-modal {
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  #asistente-insumo-modal .form-grid {
+    grid-template-columns: 1fr;
+  }
+  #asistente-insumo-modal fieldset {
+    min-width: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  #asistente-insumo-modal .dialog-actions {
+    flex-direction: column;
+  }
+  #asistente-insumo-modal .dialog-actions button {
+    width: 100%;
+  }
   .mobile-hidden { display: none; }
   .mobile-cards {
     display: grid;
