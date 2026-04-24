@@ -266,13 +266,13 @@ render_page_start('Presupuestos');
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
     <p class="muted">3 renglones iniciales. Botón + para agregar y X para eliminar.</p>
-    <div class="insumo-row insumo-row-head" style="display:grid;grid-template-columns:minmax(260px,2fr) 110px 130px 36px;gap:8px;align-items:center;min-width:560px;">
+    <div class="insumo-row insumo-row-head">
       <strong>Insumo existente</strong>
       <strong>Cantidad</strong>
       <strong>Costo unitario</strong>
       <span></span>
     </div>
-    <div id="insumos-items" style="overflow-x:auto;padding-bottom:4px;"></div>
+    <div id="insumos-items"></div>
     <div class="inline-actions">
       <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
       <button type="button" id="abrir-asistente-insumo" class="secondary-btn assistant-btn">Asistente de insumos</button>
@@ -366,7 +366,7 @@ render_page_start('Presupuestos');
 <?php endif; ?>
 
 <template id="insumo-item-template">
-  <div class="insumo-row insumo-item" style="display:grid;grid-template-columns:minmax(260px,2fr) 110px 130px 36px;gap:8px;align-items:center;min-width:560px;margin-bottom:8px;">
+  <div class="insumo-row insumo-item">
     <div>
       <select name="insumo_id[]" class="insumo-select">
         <option value="">Seleccionar...</option>
