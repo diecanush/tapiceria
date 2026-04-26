@@ -291,6 +291,45 @@ $verPresupuestoId = (int) ($_GET['ver'] ?? 0);
 $presupuestoDetalle = $verPresupuestoId > 0 ? find_presupuesto_by_id($presupuestos, $verPresupuestoId) : null;
 $soloDetalle = (($_GET['solo_detalle'] ?? '') === '1');
 
+$filtroCliente = (int) ($_GET['filtro_cliente'] ?? 0);
+$filtroEstado = trim((string) ($_GET['filtro_estado'] ?? ''));
+$orden = trim((string) ($_GET['orden'] ?? 'fecha'));
+$direccion = trim((string) ($_GET['dir'] ?? 'desc'));
+$allowedSorts = ['fecha', 'cliente', 'estado'];
+if (!in_array($orden, $allowedSorts, true)) {
+    $orden = 'fecha';
+}
+if ($direccion !== 'asc' && $direccion !== 'desc') {
+    $direccion = 'desc';
+}
+
+$presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
+    if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
+        return false;
+    }
+    if ($filtroEstado !== '' && (string) ($presupuesto['estado'] ?? '') !== $filtroEstado) {
+        return false;
+    }
+
+    return true;
+}));
+
+usort($presupuestosListado, static function (array $a, array $b) use ($orden, $direccion, $clientesById): int {
+    if ($orden === 'cliente') {
+        $valA = strtolower((string) ($clientesById[(int) ($a['cliente_id'] ?? 0)] ?? ''));
+        $valB = strtolower((string) ($clientesById[(int) ($b['cliente_id'] ?? 0)] ?? ''));
+    } elseif ($orden === 'estado') {
+        $valA = strtolower((string) ($a['estado'] ?? ''));
+        $valB = strtolower((string) ($b['estado'] ?? ''));
+    } else {
+        $valA = (string) ($a['fecha'] ?? '');
+        $valB = (string) ($b['fecha'] ?? '');
+    }
+
+    $result = $valA <=> $valB;
+    return $direccion === 'asc' ? $result : -$result;
+});
+
 render_page_start('Presupuestos');
 
 if ($soloDetalle) {
@@ -346,18 +385,55 @@ if ($soloDetalle) {
   <div><button type="submit">Crear presupuesto</button></div>
 </form>
 
-<table class="table presupuestos-table">
-  <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Mano de obra</th><th>Margen %</th><th>Materiales</th><th>Total</th><th>Detalle</th><th>Acciones</th></tr></thead>
-  <tbody>
-  <?php foreach ($presupuestos as $presupuesto): ?>
-    <tr>
-      <form method="post">
-        <td>
-          <?= (int) ($presupuesto['id'] ?? 0) ?>
-          <input type="hidden" name="id" value="<?= (int) ($presupuesto['id'] ?? 0) ?>">
-        </td>
-        <td><?= h((string) ($presupuesto['fecha'] ?? '')) ?></td>
-        <td>
+<form method="get" class="form-grid card" style="margin-top:12px;">
+  <label>Filtrar por cliente
+    <select name="filtro_cliente">
+      <option value="0">Todos</option>
+      <?php foreach ($clientes as $cliente): ?>
+        <option value="<?= (int) $cliente['id'] ?>" <?= (int) $cliente['id'] === $filtroCliente ? 'selected' : '' ?>><?= h((string) $cliente['nombre']) ?></option>
+      <?php endforeach; ?>
+    </select>
+  </label>
+  <label>Filtrar por estado
+    <select name="filtro_estado">
+      <option value="">Todos</option>
+      <option value="borrador" <?= $filtroEstado === 'borrador' ? 'selected' : '' ?>>Borrador</option>
+      <option value="enviado" <?= $filtroEstado === 'enviado' ? 'selected' : '' ?>>Enviado</option>
+      <option value="aprobado" <?= $filtroEstado === 'aprobado' ? 'selected' : '' ?>>Aprobado</option>
+      <option value="rechazado" <?= $filtroEstado === 'rechazado' ? 'selected' : '' ?>>Rechazado</option>
+    </select>
+  </label>
+  <label>Ordenar por
+    <select name="orden">
+      <option value="fecha" <?= $orden === 'fecha' ? 'selected' : '' ?>>Fecha</option>
+      <option value="cliente" <?= $orden === 'cliente' ? 'selected' : '' ?>>Cliente</option>
+      <option value="estado" <?= $orden === 'estado' ? 'selected' : '' ?>>Estado</option>
+    </select>
+  </label>
+  <label>Dirección
+    <select name="dir">
+      <option value="desc" <?= $direccion === 'desc' ? 'selected' : '' ?>>Descendente</option>
+      <option value="asc" <?= $direccion === 'asc' ? 'selected' : '' ?>>Ascendente</option>
+    </select>
+  </label>
+  <div class="inline-actions">
+    <button type="submit" class="secondary-btn">Aplicar</button>
+    <a href="presupuesto_nuevo.php" class="secondary-btn action-link">Limpiar</a>
+  </div>
+</form>
+
+<section class="presupuestos-cards">
+<?php foreach ($presupuestosListado as $presupuesto): ?>
+  <article class="card presupuesto-card">
+    <form method="post" class="presupuesto-card-form">
+      <input type="hidden" name="id" value="<?= (int) ($presupuesto['id'] ?? 0) ?>">
+      <div class="presupuesto-card-head">
+        <strong>#<?= (int) ($presupuesto['id'] ?? 0) ?></strong>
+        <span class="muted"><?= h((string) ($presupuesto['fecha'] ?? '')) ?></span>
+      </div>
+
+      <div class="presupuesto-card-grid">
+        <label>Cliente
           <select name="cliente_id" required>
             <option value="">Seleccionar...</option>
             <?php foreach ($clientes as $cliente): ?>
@@ -366,32 +442,55 @@ if ($soloDetalle) {
               </option>
             <?php endforeach; ?>
           </select>
-        </td>
-        <td>
+        </label>
+
+        <label>Estado
           <select name="estado">
             <option value="borrador" <?= ($presupuesto['estado'] ?? 'borrador') === 'borrador' ? 'selected' : '' ?>>Borrador</option>
             <option value="enviado" <?= ($presupuesto['estado'] ?? 'borrador') === 'enviado' ? 'selected' : '' ?>>Enviado</option>
             <option value="aprobado" <?= ($presupuesto['estado'] ?? 'borrador') === 'aprobado' ? 'selected' : '' ?>>Aprobado</option>
             <option value="rechazado" <?= ($presupuesto['estado'] ?? 'borrador') === 'rechazado' ? 'selected' : '' ?>>Rechazado</option>
           </select>
-        </td>
-        <td><input type="number" step="0.01" min="0" name="mano_obra" class="compact-number" value="<?= (float) ($presupuesto['mano_obra'] ?? 0) ?>"></td>
-        <td><input type="number" step="0.01" min="0" name="margen" class="compact-number" value="<?= (float) ($presupuesto['margen'] ?? 0) ?>"></td>
-        <td><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></td>
-        <td><?= money((float) ($presupuesto['total'] ?? 0)) ?></td>
-        <td><input type="text" name="detalle" class="compact-detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>"></td>
-        <td class="actions-wrap">
-          <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
-          <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>&solo_detalle=1" class="secondary-btn action-link" target="_blank" rel="noopener">Imprimir</a>
-          <a href="presupuesto_nuevo.php?export=csv&id=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn excel-btn action-link">Excel</a>
-          <button type="submit" name="action" value="edit" class="secondary-btn">Guardar</button>
-          <button type="submit" name="action" value="delete" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto?');">Borrar</button>
-        </td>
-      </form>
-    </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
+        </label>
+
+        <label>Mano de obra
+          <input type="number" step="0.01" min="0" name="mano_obra" value="<?= (float) ($presupuesto['mano_obra'] ?? 0) ?>">
+        </label>
+
+        <label>Margen %
+          <input type="number" step="0.01" min="0" name="margen" value="<?= (float) ($presupuesto['margen'] ?? 0) ?>">
+        </label>
+
+        <label class="wide">Detalle
+          <input type="text" name="detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>">
+        </label>
+
+        <div>
+          <small class="muted">Materiales</small>
+          <div><strong><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></strong></div>
+        </div>
+
+        <div>
+          <small class="muted">Total</small>
+          <div><strong><?= money((float) ($presupuesto['total'] ?? 0)) ?></strong></div>
+        </div>
+      </div>
+
+      <div class="actions-wrap presupuesto-card-actions">
+        <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
+        <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>&solo_detalle=1" class="secondary-btn action-link" target="_blank" rel="noopener">Imprimir</a>
+        <a href="presupuesto_nuevo.php?export=csv&id=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn excel-btn action-link">Excel</a>
+        <button type="submit" name="action" value="edit" class="secondary-btn">Guardar</button>
+        <button type="submit" name="action" value="delete" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto?');">Borrar</button>
+      </div>
+    </form>
+  </article>
+<?php endforeach; ?>
+</section>
+
+<?php if ($presupuestoDetalle !== null): ?>
+  <?php render_presupuesto_detalle($presupuestoDetalle, $clientesById); ?>
+<?php endif; ?>
 
 <?php if ($presupuestoDetalle !== null): ?>
   <?php render_presupuesto_detalle($presupuestoDetalle, $clientesById); ?>

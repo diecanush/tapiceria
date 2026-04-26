@@ -184,6 +184,37 @@ button:hover { background: #1e40af; }
 .presupuestos-table .actions-wrap .danger-btn {
   margin-left: 0;
 }
+.presupuestos-cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.presupuesto-card-form {
+  display: grid;
+  gap: 8px;
+}
+.presupuesto-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.presupuesto-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+.presupuesto-card-grid .wide {
+  grid-column: span 2;
+}
+.presupuesto-card-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 6px;
+}
+.presupuesto-card-actions .danger-btn {
+  margin-left: 0;
+}
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 
@@ -232,6 +263,12 @@ button:hover { background: #1e40af; }
   }
   .presupuestos-table .actions-wrap {
     grid-template-columns: repeat(2, minmax(78px, 1fr));
+  }
+  .presupuesto-card-grid .wide {
+    grid-column: auto;
+  }
+  .presupuesto-card-actions {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
   }
   .actions-wrap .action-link,
   .actions-wrap button {
