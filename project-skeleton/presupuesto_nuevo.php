@@ -302,6 +302,36 @@ if (!in_array($orden, $allowedSorts, true)) {
 if ($direccion !== 'asc' && $direccion !== 'desc') {
     $direccion = 'desc';
 }
+if ($direccion !== 'asc' && $direccion !== 'desc') {
+    $direccion = 'desc';
+}
+
+$presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
+    if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
+        return false;
+    }
+    if ($filtroEstado !== '' && (string) ($presupuesto['estado'] ?? '') !== $filtroEstado) {
+        return false;
+    }
+
+    return true;
+}));
+
+usort($presupuestosListado, static function (array $a, array $b) use ($orden, $direccion, $clientesById): int {
+    if ($orden === 'cliente') {
+        $valA = strtolower((string) ($clientesById[(int) ($a['cliente_id'] ?? 0)] ?? ''));
+        $valB = strtolower((string) ($clientesById[(int) ($b['cliente_id'] ?? 0)] ?? ''));
+    } elseif ($orden === 'estado') {
+        $valA = strtolower((string) ($a['estado'] ?? ''));
+        $valB = strtolower((string) ($b['estado'] ?? ''));
+    } else {
+        $valA = (string) ($a['fecha'] ?? '');
+        $valB = (string) ($b['fecha'] ?? '');
+    }
+
+    $result = $valA <=> $valB;
+    return $direccion === 'asc' ? $result : -$result;
+});
 
 $presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
     if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
