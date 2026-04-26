@@ -87,6 +87,11 @@ function export_presupuestos_csv(array $presupuestos, array $clientesById, ?int 
 
 function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesById, bool $standalone = false): void
 {
+    $manoObra = (float) ($presupuestoDetalle['mano_obra'] ?? 0);
+    $materiales = (float) ($presupuestoDetalle['materiales'] ?? 0);
+    $margenPct = (float) ($presupuestoDetalle['margen'] ?? 0);
+    $margenMonto = ($manoObra + $materiales) * ($margenPct / 100);
+
     echo '<section class="card" style="margin-top:16px;">';
     echo '<h3 style="margin-top:0;">Detalle del presupuesto #' . (int) ($presupuestoDetalle['id'] ?? 0) . '</h3>';
     if ($standalone) {
@@ -99,9 +104,9 @@ function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesBy
     echo '<p><strong>Fecha:</strong> ' . h((string) ($presupuestoDetalle['fecha'] ?? '')) . '</p>';
     echo '<p><strong>Estado:</strong> ' . h((string) ($presupuestoDetalle['estado'] ?? 'borrador')) . '</p>';
     echo '<p><strong>Detalle:</strong> ' . h((string) ($presupuestoDetalle['detalle'] ?? '')) . '</p>';
-    echo '<p><strong>Mano de obra:</strong> ' . money((float) ($presupuestoDetalle['mano_obra'] ?? 0)) . '</p>';
-    echo '<p><strong>Materiales:</strong> ' . money((float) ($presupuestoDetalle['materiales'] ?? 0)) . '</p>';
-    echo '<p><strong>Margen:</strong> ' . (float) ($presupuestoDetalle['margen'] ?? 0) . '%</p>';
+    echo '<p><strong>Mano de obra:</strong> ' . money($manoObra) . '</p>';
+    echo '<p><strong>Materiales:</strong> ' . money($materiales) . '</p>';
+    echo '<p><strong>Margen:</strong> ' . $margenPct . '% (' . money($margenMonto) . ')</p>';
     echo '<p><strong>Total:</strong> ' . money((float) ($presupuestoDetalle['total'] ?? 0)) . '</p>';
     echo '<h4>Insumos estimados</h4>';
     echo '<table class="table">';
