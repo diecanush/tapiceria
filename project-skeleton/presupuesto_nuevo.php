@@ -302,6 +302,36 @@ if (!in_array($orden, $allowedSorts, true)) {
 if ($direccion !== 'asc' && $direccion !== 'desc') {
     $direccion = 'desc';
 }
+if ($direccion !== 'asc' && $direccion !== 'desc') {
+    $direccion = 'desc';
+}
+
+$presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
+    if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
+        return false;
+    }
+    if ($filtroEstado !== '' && (string) ($presupuesto['estado'] ?? '') !== $filtroEstado) {
+        return false;
+    }
+
+    return true;
+}));
+
+usort($presupuestosListado, static function (array $a, array $b) use ($orden, $direccion, $clientesById): int {
+    if ($orden === 'cliente') {
+        $valA = strtolower((string) ($clientesById[(int) ($a['cliente_id'] ?? 0)] ?? ''));
+        $valB = strtolower((string) ($clientesById[(int) ($b['cliente_id'] ?? 0)] ?? ''));
+    } elseif ($orden === 'estado') {
+        $valA = strtolower((string) ($a['estado'] ?? ''));
+        $valB = strtolower((string) ($b['estado'] ?? ''));
+    } else {
+        $valA = (string) ($a['fecha'] ?? '');
+        $valB = (string) ($b['fecha'] ?? '');
+    }
+
+    $result = $valA <=> $valB;
+    return $direccion === 'asc' ? $result : -$result;
+});
 
 $presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
     if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
@@ -541,6 +571,13 @@ if ($soloDetalle) {
     <p class="muted" style="margin:0;">Calcula cantidad sugerida en base a piezas y tipo de insumo.</p>
 
     <div class="form-grid">
+      <label>Modo de carga
+        <select id="asistente-modo-carga">
+          <option value="libre">Piezas libres</option>
+          <option value="modulos">Módulos de sillón</option>
+        </select>
+      </label>
+
       <label>Tipo de insumo
         <select id="asistente-tipo-insumo">
           <option value="tela">Tela</option>
@@ -571,6 +608,24 @@ if ($soloDetalle) {
         <input type="number" id="asistente-costo-unitario" min="0" step="0.01" value="0">
       </label>
     </div>
+
+    <fieldset id="asistente-modulos-box" style="display:none;">
+      <legend>Módulos de sillón</legend>
+      <p class="muted">Agregá solo los módulos que aplican (ej: otomana sin respaldo/apoyabrazos).</p>
+      <div class="piece-grid-head" style="grid-template-columns:140px repeat(4,minmax(80px,1fr)) 36px;">
+        <strong>Módulo</strong>
+        <strong>Ancho</strong>
+        <strong>Alto</strong>
+        <strong>Prof.</strong>
+        <strong>Cant.</strong>
+        <span></span>
+      </div>
+      <div id="asistente-modulos"></div>
+      <div class="inline-actions">
+        <button type="button" id="agregar-modulo-asistente" class="secondary-btn">+ Agregar módulo</button>
+        <button type="button" id="generar-piezas-modulos" class="secondary-btn">Generar piezas</button>
+      </div>
+    </fieldset>
 
     <fieldset>
       <legend>Piezas a cortar</legend>
@@ -634,11 +689,16 @@ if ($soloDetalle) {
   var assistantModal = document.getElementById('asistente-insumo-modal');
   var assistantForm = document.getElementById('asistente-insumo-form');
   var assistantType = document.getElementById('asistente-tipo-insumo');
+  var assistantMode = document.getElementById('asistente-modo-carga');
   var assistantInsumoId = document.getElementById('asistente-insumo-id');
   var assistantInsumoNuevo = document.getElementById('asistente-insumo-nuevo');
   var assistantCosto = document.getElementById('asistente-costo-unitario');
   var assistantPieces = document.getElementById('asistente-piezas');
   var assistantAddPiece = document.getElementById('agregar-pieza-asistente');
+  var assistantModulesBox = document.getElementById('asistente-modulos-box');
+  var assistantModules = document.getElementById('asistente-modulos');
+  var assistantAddModule = document.getElementById('agregar-modulo-asistente');
+  var assistantGenerateFromModules = document.getElementById('generar-piezas-modulos');
   var assistantCalculate = document.getElementById('calcular-asistente-insumo');
   var assistantCancel = document.getElementById('cancelar-asistente-insumo');
   var assistantResult = document.getElementById('asistente-resultado');
@@ -729,6 +789,61 @@ if ($soloDetalle) {
       + '<input type="number" class="pieza-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
       + '<button type="button" class="danger-btn remove-pieza" style="width:30px;height:30px;padding:0;">X</button>';
     assistantPieces.appendChild(row);
+  }
+
+  function addAssistantModule(values) {
+    var row = document.createElement('div');
+    row.className = 'piece-grid-row module-row';
+    row.style.gridTemplateColumns = '140px repeat(4,minmax(80px,1fr)) 36px';
+    row.innerHTML = ''
+      + '<select class="modulo-tipo">'
+      + '  <option value="asiento">Asiento</option>'
+      + '  <option value="respaldo">Respaldo</option>'
+      + '  <option value="apoyabrazos">Apoyabrazos</option>'
+      + '  <option value="almohadon">Almohadón</option>'
+      + '</select>'
+      + '<input type="number" class="modulo-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
+      + '<input type="number" class="modulo-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
+      + '<input type="number" class="modulo-profundidad" min="0" step="0.01" value="' + (values && values.profundidad ? values.profundidad : 0) + '">'
+      + '<input type="number" class="modulo-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
+      + '<button type="button" class="danger-btn remove-modulo" style="width:30px;height:30px;padding:0;">X</button>';
+    assistantModules.appendChild(row);
+    if (values && values.tipo) {
+      row.querySelector('.modulo-tipo').value = values.tipo;
+    }
+  }
+
+  function updateAssistantMode() {
+    var mode = assistantMode.value;
+    if (mode === 'modulos') {
+      assistantModulesBox.style.display = '';
+    } else {
+      assistantModulesBox.style.display = 'none';
+    }
+  }
+
+  function moduleToPieces(module) {
+    var pieces = [];
+    var repeat = module.cantidad;
+    if (module.tipo === 'asiento') {
+      pieces.push({ alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+    } else if (module.tipo === 'respaldo') {
+      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ alto: module.profundidad, ancho: module.ancho, cantidad: 1 * repeat });
+    } else if (module.tipo === 'apoyabrazos') {
+      pieces.push({ alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 1 * repeat });
+    } else if (module.tipo === 'almohadon') {
+      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      if (module.profundidad > 0) {
+        pieces.push({ alto: (module.alto * 2) + (module.ancho * 2), ancho: module.profundidad, cantidad: 1 * repeat });
+      }
+    }
+    return pieces;
   }
 
   function updateAssistantTypeFields() {
@@ -889,6 +1004,10 @@ if ($soloDetalle) {
     assistantInsumoId.value = '';
     assistantInsumoNuevo.value = '';
     assistantCosto.value = '0';
+    assistantMode.value = 'libre';
+    updateAssistantMode();
+    assistantModules.innerHTML = '';
+    addAssistantModule({ tipo: 'asiento', ancho: 60, alto: 15, profundidad: 60, cantidad: 1 });
     assistantPieces.innerHTML = '';
     addAssistantPiece({ alto: 60, ancho: 60, cantidad: 1 });
     assistantType.value = 'tela';
@@ -983,9 +1102,14 @@ if ($soloDetalle) {
   });
 
   assistantType.addEventListener('change', updateAssistantTypeFields);
+  assistantMode.addEventListener('change', updateAssistantMode);
 
   assistantAddPiece.addEventListener('click', function () {
     addAssistantPiece({ alto: 0, ancho: 0, cantidad: 1 });
+  });
+
+  assistantAddModule.addEventListener('click', function () {
+    addAssistantModule({ tipo: 'asiento', ancho: 0, alto: 0, profundidad: 0, cantidad: 1 });
   });
 
   assistantPieces.addEventListener('click', function (event) {
@@ -996,6 +1120,40 @@ if ($soloDetalle) {
     if (row) {
       row.remove();
     }
+  });
+
+  assistantModules.addEventListener('click', function (event) {
+    if (!event.target.classList.contains('remove-modulo')) {
+      return;
+    }
+    var row = event.target.closest('.module-row');
+    if (row) {
+      row.remove();
+    }
+  });
+
+  assistantGenerateFromModules.addEventListener('click', function () {
+    var rows = Array.prototype.slice.call(assistantModules.querySelectorAll('.module-row'));
+    if (rows.length === 0) {
+      assistantResult.textContent = 'Agregá al menos un módulo para generar piezas.';
+      return;
+    }
+    assistantPieces.innerHTML = '';
+    rows.forEach(function (row) {
+      var module = {
+        tipo: row.querySelector('.modulo-tipo').value,
+        ancho: parseNumber(row.querySelector('.modulo-ancho').value, 0),
+        alto: parseNumber(row.querySelector('.modulo-alto').value, 0),
+        profundidad: parseNumber(row.querySelector('.modulo-profundidad').value, 0),
+        cantidad: Math.max(1, Math.round(parseNumber(row.querySelector('.modulo-cantidad').value, 1)))
+      };
+      moduleToPieces(module).forEach(function (piece) {
+        if (piece.alto > 0 && piece.ancho > 0 && piece.cantidad > 0) {
+          addAssistantPiece(piece);
+        }
+      });
+    });
+    assistantResult.textContent = 'Piezas generadas desde módulos. Revisá y presioná "Calcular".';
   });
 
   assistantCalculate.addEventListener('click', function () {
@@ -1056,6 +1214,7 @@ if ($soloDetalle) {
   addItem();
   addItem();
   updateAssistantTypeFields();
+  updateAssistantMode();
 })();
 </script>
 <?php render_page_end(); ?>
