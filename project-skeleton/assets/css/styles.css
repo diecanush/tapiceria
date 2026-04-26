@@ -99,7 +99,7 @@ button:hover { background: #1e40af; }
 }
 .insumo-row {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) 110px 130px 36px;
+  grid-template-columns: 150px minmax(220px, 2fr) 110px 130px 36px;
   gap: 8px;
   align-items: center;
   min-width: 0;

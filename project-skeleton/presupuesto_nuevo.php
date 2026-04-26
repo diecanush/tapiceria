@@ -7,6 +7,7 @@ $clientes = read_json(data_file('clientes'));
 $insumos = read_json(data_file('insumos'));
 $config = read_json(data_file('config'));
 $presupuestos = read_json(data_file('presupuestos'));
+$categoriasInsumo = ['tela', 'gomaespuma', 'fleje', 'cierre', 'otros'];
 $clientesById = [];
 foreach ($clientes as $cliente) {
     $clientesById[(int) ($cliente['id'] ?? 0)] = (string) ($cliente['nombre'] ?? '');
@@ -152,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $insumoIds = $_POST['insumo_id'] ?? [];
+    $insumoCategorias = $_POST['insumo_categoria'] ?? [];
     $insumoNuevos = $_POST['insumo_nombre_nuevo'] ?? [];
     $cantidades = $_POST['cantidad'] ?? [];
     $costos = $_POST['costo_unitario'] ?? [];
@@ -166,6 +168,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     foreach ($insumoIds as $i => $insumoIdRaw) {
         $insumoId = (int) $insumoIdRaw;
+        $categoriaInsumo = trim((string) ($insumoCategorias[$i] ?? 'otros'));
+        if (!in_array($categoriaInsumo, $categoriasInsumo, true)) {
+            $categoriaInsumo = 'otros';
+        }
         $nombreNuevo = trim((string) ($insumoNuevos[$i] ?? ''));
         $cantidad = (float) ($cantidades[$i] ?? 0);
         $costoUnitario = (float) ($costos[$i] ?? 0);
@@ -178,7 +184,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $nuevo = [
                     'id' => next_id($insumos),
                     'nombre' => $nombreNuevo,
+                    'categoria' => $categoriaInsumo,
                     'unidad' => 'unidad',
+                    'precio' => $costoUnitario,
                     'stock' => 0,
                     'stock_minimo' => 0,
                 ];
@@ -197,12 +205,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $insumo = $insumosById[$insumoId];
+        if ($costoUnitario <= 0) {
+            $costoUnitario = (float) ($insumo['precio'] ?? 0);
+        }
         $subtotal = $cantidad * $costoUnitario;
         $materiales += $subtotal;
 
         $insumosEstimados[] = [
             'insumo_id' => $insumoId,
             'nombre' => (string) ($insumo['nombre'] ?? 'Insumo'),
+            'categoria' => (string) ($insumo['categoria'] ?? 'otros'),
             'unidad' => (string) ($insumo['unidad'] ?? 'unidad'),
             'cantidad' => $cantidad,
             'costo_unitario' => round($costoUnitario, 2),
@@ -267,6 +279,7 @@ render_page_start('Presupuestos');
     <legend>Estimación de insumos</legend>
     <p class="muted">3 renglones iniciales. Botón + para agregar y X para eliminar.</p>
     <div class="insumo-row insumo-row-head">
+      <strong>Categoría</strong>
       <strong>Insumo existente</strong>
       <strong>Cantidad</strong>
       <strong>Costo unitario</strong>
@@ -367,12 +380,22 @@ render_page_start('Presupuestos');
 
 <template id="insumo-item-template">
   <div class="insumo-row insumo-item">
+    <select name="insumo_categoria[]" class="insumo-categoria">
+      <option value="todas" selected>Todas</option>
+      <?php foreach ($categoriasInsumo as $categoria): ?>
+        <option value="<?= h($categoria) ?>"><?= h(ucfirst($categoria)) ?></option>
+      <?php endforeach; ?>
+    </select>
     <div>
       <select name="insumo_id[]" class="insumo-select">
         <option value="">Seleccionar...</option>
         <option value="__new__">+ Cargar insumo nuevo...</option>
         <?php foreach ($insumos as $insumo): ?>
-          <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+          <option
+            value="<?= (int) $insumo['id'] ?>"
+            data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"
+            data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>"
+          ><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
         <?php endforeach; ?>
       </select>
       <input type="hidden" name="insumo_nombre_nuevo[]" class="insumo-nuevo-hidden" value="">
@@ -417,7 +440,11 @@ render_page_start('Presupuestos');
         <select id="asistente-insumo-id">
           <option value="">Seleccionar...</option>
           <?php foreach ($insumos as $insumo): ?>
-            <option value="<?= (int) $insumo['id'] ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+            <option
+              value="<?= (int) $insumo['id'] ?>"
+              data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"
+              data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>"
+            ><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
           <?php endforeach; ?>
         </select>
       </label>
@@ -511,15 +538,23 @@ render_page_start('Presupuestos');
   function addItem() {
     var node = template.content.cloneNode(true);
     container.appendChild(node);
-    return container.lastElementChild;
+    var row = container.lastElementChild;
+    applyCategoryFilter(row);
+    return row;
   }
 
-  function applyInsumoSelectionToRow(row, insumoId, insumoNuevo) {
+  function applyInsumoSelectionToRow(row, insumoId, insumoNuevo, categoria) {
     var hiddenInput = row.querySelector('.insumo-nuevo-hidden');
     var label = row.querySelector('.insumo-nuevo-label');
     var select = row.querySelector('.insumo-select');
+    var categoriaSelect = row.querySelector('.insumo-categoria');
     if (!hiddenInput || !label || !select) {
       return;
+    }
+
+    if (categoriaSelect && categoria) {
+      categoriaSelect.value = categoria;
+      applyCategoryFilter(row);
     }
 
     if (insumoId !== '') {
@@ -539,6 +574,31 @@ render_page_start('Presupuestos');
     select.value = '';
     hiddenInput.value = '';
     label.textContent = '';
+  }
+
+  function applyCategoryFilter(row) {
+    var categoriaSelect = row.querySelector('.insumo-categoria');
+    var insumoSelect = row.querySelector('.insumo-select');
+    if (!categoriaSelect || !insumoSelect) {
+      return;
+    }
+
+    var categoria = categoriaSelect.value || 'todas';
+    Array.prototype.slice.call(insumoSelect.options).forEach(function (option) {
+      if (option.value === '' || option.value === '__new__') {
+        option.hidden = false;
+        return;
+      }
+      var optionCategory = option.getAttribute('data-categoria') || 'otros';
+      option.hidden = categoria !== 'todas' && optionCategory !== categoria;
+    });
+
+    if (insumoSelect.value !== '' && insumoSelect.value !== '__new__') {
+      var selected = insumoSelect.options[insumoSelect.selectedIndex];
+      if (selected && selected.hidden) {
+        insumoSelect.value = '';
+      }
+    }
   }
 
   function parseNumber(input, defaultValue) {
@@ -738,6 +798,14 @@ render_page_start('Presupuestos');
   });
 
   container.addEventListener('change', function (event) {
+    if (event.target.classList.contains('insumo-categoria')) {
+      var categoryRow = event.target.closest('.insumo-item');
+      if (categoryRow) {
+        applyCategoryFilter(categoryRow);
+      }
+      return;
+    }
+
     if (!event.target.classList.contains('insumo-select')) {
       return;
     }
@@ -745,6 +813,7 @@ render_page_start('Presupuestos');
     var row = event.target.closest('.insumo-item');
     var hiddenInput = row.querySelector('.insumo-nuevo-hidden');
     var label = row.querySelector('.insumo-nuevo-label');
+    var costoInput = row.querySelector('input[name="costo_unitario[]"]');
 
     if (event.target.value === '__new__') {
       pendingRow = row;
@@ -753,6 +822,14 @@ render_page_start('Presupuestos');
         modal.showModal();
       }
       return;
+    }
+
+    if (event.target.value !== '') {
+      var selected = event.target.options[event.target.selectedIndex];
+      var precioBase = parseNumber(selected.getAttribute('data-precio'), 0);
+      if (costoInput && precioBase > 0) {
+        costoInput.value = precioBase.toFixed(2);
+      }
     }
 
     hiddenInput.value = '';
@@ -811,6 +888,17 @@ render_page_start('Presupuestos');
     calculateAssistant();
   });
 
+  assistantInsumoId.addEventListener('change', function () {
+    if (assistantInsumoId.value === '') {
+      return;
+    }
+    var selected = assistantInsumoId.options[assistantInsumoId.selectedIndex];
+    var precio = parseNumber(selected.getAttribute('data-precio'), 0);
+    if (precio > 0) {
+      assistantCosto.value = precio.toFixed(2);
+    }
+  });
+
   assistantCancel.addEventListener('click', function () {
     assistantModal.close();
   });
@@ -830,7 +918,14 @@ render_page_start('Presupuestos');
     }
 
     var row = addItem();
-    applyInsumoSelectionToRow(row, selectedId, newName);
+    var categoryByType = {
+      tela: 'tela',
+      gomaespuma: 'gomaespuma',
+      fleje: 'fleje',
+      cierre: 'cierre'
+    };
+    var categoria = categoryByType[assistantType.value] || 'otros';
+    applyInsumoSelectionToRow(row, selectedId, newName, categoria);
     var cantidadInput = row.querySelector('input[name="cantidad[]"]');
     var costoInput = row.querySelector('input[name="costo_unitario[]"]');
     if (cantidadInput) {
