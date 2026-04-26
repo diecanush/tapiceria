@@ -492,6 +492,10 @@ if ($soloDetalle) {
   <?php render_presupuesto_detalle($presupuestoDetalle, $clientesById); ?>
 <?php endif; ?>
 
+<?php if ($presupuestoDetalle !== null): ?>
+  <?php render_presupuesto_detalle($presupuestoDetalle, $clientesById); ?>
+<?php endif; ?>
+
 <template id="insumo-item-template">
   <div class="insumo-row insumo-item">
     <select name="insumo_categoria[]" class="insumo-categoria">
