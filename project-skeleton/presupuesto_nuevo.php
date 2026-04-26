@@ -346,7 +346,7 @@ if ($soloDetalle) {
   <div><button type="submit">Crear presupuesto</button></div>
 </form>
 
-<table class="table">
+<table class="table presupuestos-table">
   <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Mano de obra</th><th>Margen %</th><th>Materiales</th><th>Total</th><th>Detalle</th><th>Acciones</th></tr></thead>
   <tbody>
   <?php foreach ($presupuestos as $presupuesto): ?>
@@ -375,11 +375,11 @@ if ($soloDetalle) {
             <option value="rechazado" <?= ($presupuesto['estado'] ?? 'borrador') === 'rechazado' ? 'selected' : '' ?>>Rechazado</option>
           </select>
         </td>
-        <td><input type="number" step="0.01" min="0" name="mano_obra" value="<?= (float) ($presupuesto['mano_obra'] ?? 0) ?>"></td>
-        <td><input type="number" step="0.01" min="0" name="margen" value="<?= (float) ($presupuesto['margen'] ?? 0) ?>"></td>
+        <td><input type="number" step="0.01" min="0" name="mano_obra" class="compact-number" value="<?= (float) ($presupuesto['mano_obra'] ?? 0) ?>"></td>
+        <td><input type="number" step="0.01" min="0" name="margen" class="compact-number" value="<?= (float) ($presupuesto['margen'] ?? 0) ?>"></td>
         <td><?= money((float) ($presupuesto['materiales'] ?? 0)) ?></td>
         <td><?= money((float) ($presupuesto['total'] ?? 0)) ?></td>
-        <td><input type="text" name="detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>"></td>
+        <td><input type="text" name="detalle" class="compact-detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>"></td>
         <td class="actions-wrap">
           <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
           <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>&solo_detalle=1" class="secondary-btn action-link" target="_blank" rel="noopener">Imprimir</a>

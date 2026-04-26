@@ -159,6 +159,31 @@ button:hover { background: #1e40af; }
   flex-wrap: wrap;
   gap: 6px;
 }
+.presupuestos-table th,
+.presupuestos-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+.presupuestos-table .compact-number {
+  min-width: 90px;
+}
+.presupuestos-table .compact-detalle {
+  min-width: 140px;
+}
+.presupuestos-table .actions-wrap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(86px, auto));
+  gap: 4px;
+}
+.presupuestos-table .actions-wrap .action-link,
+.presupuestos-table .actions-wrap button {
+  width: auto;
+  margin: 0;
+  padding: 6px 8px;
+}
+.presupuestos-table .actions-wrap .danger-btn {
+  margin-left: 0;
+}
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 
@@ -204,6 +229,9 @@ button:hover { background: #1e40af; }
   .actions-wrap {
     flex-direction: column;
     align-items: stretch;
+  }
+  .presupuestos-table .actions-wrap {
+    grid-template-columns: repeat(2, minmax(78px, 1fr));
   }
   .actions-wrap .action-link,
   .actions-wrap button {
