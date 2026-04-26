@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 function render_page_start(string $title): void
 {
+    $stylesPath = __DIR__ . '/../assets/css/styles.css';
+    $stylesVersion = is_file($stylesPath) ? (string) filemtime($stylesPath) : '1';
+
     echo '<!doctype html>';
     echo '<html lang="es"><head><meta charset="utf-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<title>' . h($title) . '</title>';
-    echo '<link rel="stylesheet" href="assets/css/styles.css">';
+    echo '<link rel="stylesheet" href="assets/css/styles.css?v=' . h($stylesVersion) . '">';
     echo '</head><body>';
     echo '<header class="topbar">';
     echo '<h1>' . h(app_title()) . '</h1>';
