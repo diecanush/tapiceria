@@ -85,6 +85,40 @@ function export_presupuestos_csv(array $presupuestos, array $clientesById, ?int 
     exit;
 }
 
+function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesById, bool $standalone = false): void
+{
+    echo '<section class="card" style="margin-top:16px;">';
+    echo '<h3 style="margin-top:0;">Detalle del presupuesto #' . (int) ($presupuestoDetalle['id'] ?? 0) . '</h3>';
+    if ($standalone) {
+        echo '<div class="inline-actions">';
+        echo '<button type="button" onclick="window.print()">Imprimir detalle</button>';
+        echo '<a href="presupuesto_nuevo.php?ver=' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Volver</a>';
+        echo '</div>';
+    }
+    echo '<p><strong>Cliente:</strong> ' . h((string) ($clientesById[(int) ($presupuestoDetalle['cliente_id'] ?? 0)] ?? 'Cliente eliminado')) . '</p>';
+    echo '<p><strong>Fecha:</strong> ' . h((string) ($presupuestoDetalle['fecha'] ?? '')) . '</p>';
+    echo '<p><strong>Estado:</strong> ' . h((string) ($presupuestoDetalle['estado'] ?? 'borrador')) . '</p>';
+    echo '<p><strong>Detalle:</strong> ' . h((string) ($presupuestoDetalle['detalle'] ?? '')) . '</p>';
+    echo '<p><strong>Mano de obra:</strong> ' . money((float) ($presupuestoDetalle['mano_obra'] ?? 0)) . '</p>';
+    echo '<p><strong>Materiales:</strong> ' . money((float) ($presupuestoDetalle['materiales'] ?? 0)) . '</p>';
+    echo '<p><strong>Margen:</strong> ' . (float) ($presupuestoDetalle['margen'] ?? 0) . '%</p>';
+    echo '<p><strong>Total:</strong> ' . money((float) ($presupuestoDetalle['total'] ?? 0)) . '</p>';
+    echo '<h4>Insumos estimados</h4>';
+    echo '<table class="table">';
+    echo '<thead><tr><th>Insumo</th><th>Cantidad</th><th>Unidad</th><th>Costo unitario</th><th>Subtotal</th></tr></thead><tbody>';
+    foreach (($presupuestoDetalle['insumos_estimados'] ?? []) as $item) {
+        echo '<tr>';
+        echo '<td>' . h((string) ($item['nombre'] ?? 'Insumo')) . '</td>';
+        echo '<td>' . (float) ($item['cantidad'] ?? 0) . '</td>';
+        echo '<td>' . h((string) ($item['unidad'] ?? 'unidad')) . '</td>';
+        echo '<td>' . money((float) ($item['costo_unitario'] ?? 0)) . '</td>';
+        echo '<td>' . money((float) ($item['subtotal'] ?? 0)) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+    echo '</section>';
+}
+
 if (($_GET['export'] ?? '') === 'csv') {
     $exportId = isset($_GET['id']) ? (int) $_GET['id'] : null;
     export_presupuestos_csv($presupuestos, $clientesById, $exportId);
@@ -250,8 +284,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $verPresupuestoId = (int) ($_GET['ver'] ?? 0);
 $presupuestoDetalle = $verPresupuestoId > 0 ? find_presupuesto_by_id($presupuestos, $verPresupuestoId) : null;
+$soloDetalle = (($_GET['solo_detalle'] ?? '') === '1');
 
 render_page_start('Presupuestos');
+
+if ($soloDetalle) {
+    if ($presupuestoDetalle === null) {
+        echo '<p class="flash">No se encontró el presupuesto solicitado.</p>';
+    } else {
+        render_presupuesto_detalle($presupuestoDetalle, $clientesById, true);
+    }
+    render_page_end();
+    exit;
+}
 ?>
 <form method="post" class="form-grid">
   <label>Cliente
@@ -332,6 +377,7 @@ render_page_start('Presupuestos');
         <td><input type="text" name="detalle" value="<?= h((string) ($presupuesto['detalle'] ?? '')) ?>"></td>
         <td class="actions-wrap">
           <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
+          <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>&solo_detalle=1" class="secondary-btn action-link" target="_blank" rel="noopener">Imprimir</a>
           <a href="presupuesto_nuevo.php?export=csv&id=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn excel-btn action-link">Excel</a>
           <button type="submit" name="action" value="edit" class="secondary-btn">Guardar</button>
           <button type="submit" name="action" value="delete" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto?');">Borrar</button>
@@ -343,39 +389,7 @@ render_page_start('Presupuestos');
 </table>
 
 <?php if ($presupuestoDetalle !== null): ?>
-  <section class="card" style="margin-top:16px;">
-    <h3 style="margin-top:0;">Detalle del presupuesto #<?= (int) ($presupuestoDetalle['id'] ?? 0) ?></h3>
-    <p><strong>Cliente:</strong> <?= h((string) ($clientesById[(int) ($presupuestoDetalle['cliente_id'] ?? 0)] ?? 'Cliente eliminado')) ?></p>
-    <p><strong>Fecha:</strong> <?= h((string) ($presupuestoDetalle['fecha'] ?? '')) ?></p>
-    <p><strong>Estado:</strong> <?= h((string) ($presupuestoDetalle['estado'] ?? 'borrador')) ?></p>
-    <p><strong>Detalle:</strong> <?= h((string) ($presupuestoDetalle['detalle'] ?? '')) ?></p>
-    <p><strong>Mano de obra:</strong> <?= money((float) ($presupuestoDetalle['mano_obra'] ?? 0)) ?></p>
-    <p><strong>Materiales:</strong> <?= money((float) ($presupuestoDetalle['materiales'] ?? 0)) ?></p>
-    <p><strong>Total:</strong> <?= money((float) ($presupuestoDetalle['total'] ?? 0)) ?></p>
-    <h4>Insumos estimados</h4>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Insumo</th>
-          <th>Cantidad</th>
-          <th>Unidad</th>
-          <th>Costo unitario</th>
-          <th>Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php foreach (($presupuestoDetalle['insumos_estimados'] ?? []) as $item): ?>
-        <tr>
-          <td><?= h((string) ($item['nombre'] ?? 'Insumo')) ?></td>
-          <td><?= (float) ($item['cantidad'] ?? 0) ?></td>
-          <td><?= h((string) ($item['unidad'] ?? 'unidad')) ?></td>
-          <td><?= money((float) ($item['costo_unitario'] ?? 0)) ?></td>
-          <td><?= money((float) ($item['subtotal'] ?? 0)) ?></td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  </section>
+  <?php render_presupuesto_detalle($presupuestoDetalle, $clientesById); ?>
 <?php endif; ?>
 
 <template id="insumo-item-template">
