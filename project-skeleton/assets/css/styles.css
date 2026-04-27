@@ -295,6 +295,6 @@ button:hover { background: #1e40af; }
   }
   .piece-grid-head,
   .piece-grid-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }

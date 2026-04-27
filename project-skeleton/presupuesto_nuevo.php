@@ -305,6 +305,36 @@ if ($direccion !== 'asc' && $direccion !== 'desc') {
 if ($direccion !== 'asc' && $direccion !== 'desc') {
     $direccion = 'desc';
 }
+if ($direccion !== 'asc' && $direccion !== 'desc') {
+    $direccion = 'desc';
+}
+
+$presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
+    if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
+        return false;
+    }
+    if ($filtroEstado !== '' && (string) ($presupuesto['estado'] ?? '') !== $filtroEstado) {
+        return false;
+    }
+
+    return true;
+}));
+
+usort($presupuestosListado, static function (array $a, array $b) use ($orden, $direccion, $clientesById): int {
+    if ($orden === 'cliente') {
+        $valA = strtolower((string) ($clientesById[(int) ($a['cliente_id'] ?? 0)] ?? ''));
+        $valB = strtolower((string) ($clientesById[(int) ($b['cliente_id'] ?? 0)] ?? ''));
+    } elseif ($orden === 'estado') {
+        $valA = strtolower((string) ($a['estado'] ?? ''));
+        $valB = strtolower((string) ($b['estado'] ?? ''));
+    } else {
+        $valA = (string) ($a['fecha'] ?? '');
+        $valB = (string) ($b['fecha'] ?? '');
+    }
+
+    $result = $valA <=> $valB;
+    return $direccion === 'asc' ? $result : -$result;
+});
 
 $presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
     if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
@@ -568,51 +598,25 @@ if ($soloDetalle) {
 <dialog id="asistente-insumo-modal" style="border:1px solid #d1d5db;border-radius:8px;max-width:740px;width:95%;padding:14px;">
   <form method="dialog" id="asistente-insumo-form" class="dialog-form">
     <h3 style="margin:0;">Asistente de insumos</h3>
-    <p class="muted" style="margin:0;">Calcula cantidad sugerida en base a piezas y tipo de insumo.</p>
+    <p class="muted" style="margin:0;">Primero definí el mueble y sus módulos. Después calculá cada tipo de insumo usando el checklist de piezas.</p>
 
     <div class="form-grid">
-      <label>Modo de carga
-        <select id="asistente-modo-carga">
-          <option value="libre">Piezas libres</option>
-          <option value="modulos">Módulos de sillón</option>
+      <label>Tipo de mueble
+        <select id="asistente-tipo-mueble">
+          <option value="sillon_2_cuerpos">Sillón 2 cuerpos</option>
+          <option value="sillon_3_cuerpos">Sillón 3 cuerpos</option>
+          <option value="otomana">Otomana</option>
+          <option value="silla">Silla / Butaca</option>
+          <option value="personalizado">Personalizado</option>
         </select>
-      </label>
-
-      <label>Tipo de insumo
-        <select id="asistente-tipo-insumo">
-          <option value="tela">Tela</option>
-          <option value="gomaespuma">Gomaespuma</option>
-          <option value="fleje">Fleje</option>
-          <option value="cierre">Cierre</option>
-        </select>
-      </label>
-
-      <label>Insumo existente (opcional)
-        <select id="asistente-insumo-id">
-          <option value="">Seleccionar...</option>
-          <?php foreach ($insumos as $insumo): ?>
-            <option
-              value="<?= (int) $insumo['id'] ?>"
-              data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"
-              data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>"
-            ><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-
-      <label>Nombre de insumo nuevo (opcional)
-        <input type="text" id="asistente-insumo-nuevo" placeholder="Ej: Tela chenille beige">
-      </label>
-
-      <label>Costo unitario sugerido
-        <input type="number" id="asistente-costo-unitario" min="0" step="0.01" value="0">
       </label>
     </div>
 
-    <fieldset id="asistente-modulos-box" style="display:none;">
-      <legend>Módulos de sillón</legend>
-      <p class="muted">Agregá solo los módulos que aplican (ej: otomana sin respaldo/apoyabrazos).</p>
-      <div class="piece-grid-head" style="grid-template-columns:140px repeat(4,minmax(80px,1fr)) 36px;">
+    <fieldset id="asistente-modulos-box">
+      <legend>Módulos del mueble</legend>
+      <p class="muted">Activá solo los módulos que aplican y cargá medidas. Ej: una otomana no usa respaldo.</p>
+      <div class="piece-grid-head assistant-module-head" style="grid-template-columns:70px 120px repeat(4,minmax(80px,1fr)) 36px;">
+        <strong>Activo</strong>
         <strong>Módulo</strong>
         <strong>Ancho</strong>
         <strong>Alto</strong>
@@ -623,20 +627,58 @@ if ($soloDetalle) {
       <div id="asistente-modulos"></div>
       <div class="inline-actions">
         <button type="button" id="agregar-modulo-asistente" class="secondary-btn">+ Agregar módulo</button>
-        <button type="button" id="generar-piezas-modulos" class="secondary-btn">Generar piezas</button>
+        <button type="button" id="generar-piezas-modulos" class="secondary-btn">Generar checklist de piezas</button>
       </div>
     </fieldset>
 
     <fieldset>
-      <legend>Piezas a cortar</legend>
-      <div class="piece-grid-head">
-        <strong>Alto (cm)</strong>
-        <strong>Ancho (cm)</strong>
-        <strong>Cantidad</strong>
+      <legend>Checklist de piezas</legend>
+      <div class="piece-grid-head assistant-piece-head" style="grid-template-columns:120px 130px repeat(3,minmax(70px,1fr)) 70px 36px;">
+        <strong>Módulo</strong>
+        <strong>Pieza</strong>
+        <strong>Alto</strong>
+        <strong>Ancho</strong>
+        <strong>Cant.</strong>
+        <strong>Usar</strong>
         <span></span>
       </div>
       <div id="asistente-piezas"></div>
-      <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza</button>
+      <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza manual</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Insumo a calcular</legend>
+      <div class="form-grid">
+        <label>Tipo de insumo
+          <select id="asistente-tipo-insumo">
+            <option value="tela">Tela</option>
+            <option value="gomaespuma">Gomaespuma</option>
+            <option value="fleje">Fleje</option>
+            <option value="cierre">Cierre</option>
+          </select>
+        </label>
+
+        <label>Insumo existente (opcional)
+          <select id="asistente-insumo-id">
+            <option value="">Seleccionar...</option>
+            <?php foreach ($insumos as $insumo): ?>
+              <option
+                value="<?= (int) $insumo['id'] ?>"
+                data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"
+                data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>"
+              ><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+            <?php endforeach; ?>
+          </select>
+        </label>
+
+        <label>Nombre de insumo nuevo (opcional)
+          <input type="text" id="asistente-insumo-nuevo" placeholder="Ej: Tela chenille beige">
+        </label>
+
+        <label>Costo unitario sugerido
+          <input type="number" id="asistente-costo-unitario" min="0" step="0.01" value="0">
+        </label>
+      </div>
     </fieldset>
 
     <fieldset>
@@ -688,14 +730,13 @@ if ($soloDetalle) {
   var modalCancel = document.getElementById('cancelar-nuevo-insumo');
   var assistantModal = document.getElementById('asistente-insumo-modal');
   var assistantForm = document.getElementById('asistente-insumo-form');
+  var assistantFurnitureType = document.getElementById('asistente-tipo-mueble');
   var assistantType = document.getElementById('asistente-tipo-insumo');
-  var assistantMode = document.getElementById('asistente-modo-carga');
   var assistantInsumoId = document.getElementById('asistente-insumo-id');
   var assistantInsumoNuevo = document.getElementById('asistente-insumo-nuevo');
   var assistantCosto = document.getElementById('asistente-costo-unitario');
   var assistantPieces = document.getElementById('asistente-piezas');
   var assistantAddPiece = document.getElementById('agregar-pieza-asistente');
-  var assistantModulesBox = document.getElementById('asistente-modulos-box');
   var assistantModules = document.getElementById('asistente-modulos');
   var assistantAddModule = document.getElementById('agregar-modulo-asistente');
   var assistantGenerateFromModules = document.getElementById('generar-piezas-modulos');
@@ -705,7 +746,7 @@ if ($soloDetalle) {
   var pendingRow = null;
   var lastAssistantResult = null;
 
-  if (!container || !addButton || !assistantButton || !template) {
+  if (!container || !addButton || !assistantButton || !template || !assistantFurnitureType) {
     return;
   }
 
@@ -783,10 +824,14 @@ if ($soloDetalle) {
   function addAssistantPiece(values) {
     var row = document.createElement('div');
     row.className = 'piece-grid-row';
+    row.style.gridTemplateColumns = '120px 130px repeat(3,minmax(70px,1fr)) 70px 36px';
     row.innerHTML = ''
+      + '<input type="text" class="pieza-modulo" value="' + (values && values.modulo ? values.modulo : 'manual') + '">'
+      + '<input type="text" class="pieza-nombre" value="' + (values && values.nombre ? values.nombre : 'pieza') + '">'
       + '<input type="number" class="pieza-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
       + '<input type="number" class="pieza-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
       + '<input type="number" class="pieza-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
+      + '<label style="display:flex;justify-content:center;"><input type="checkbox" class="pieza-usar" ' + (values && values.usar === false ? '' : 'checked') + '></label>'
       + '<button type="button" class="danger-btn remove-pieza" style="width:30px;height:30px;padding:0;">X</button>';
     assistantPieces.appendChild(row);
   }
@@ -794,8 +839,9 @@ if ($soloDetalle) {
   function addAssistantModule(values) {
     var row = document.createElement('div');
     row.className = 'piece-grid-row module-row';
-    row.style.gridTemplateColumns = '140px repeat(4,minmax(80px,1fr)) 36px';
+    row.style.gridTemplateColumns = '70px 120px repeat(4,minmax(80px,1fr)) 36px';
     row.innerHTML = ''
+      + '<label style="display:flex;justify-content:center;"><input type="checkbox" class="modulo-activo" ' + (values && values.activo === false ? '' : 'checked') + '></label>'
       + '<select class="modulo-tipo">'
       + '  <option value="asiento">Asiento</option>'
       + '  <option value="respaldo">Respaldo</option>'
@@ -813,34 +859,64 @@ if ($soloDetalle) {
     }
   }
 
-  function updateAssistantMode() {
-    var mode = assistantMode.value;
-    if (mode === 'modulos') {
-      assistantModulesBox.style.display = '';
-    } else {
-      assistantModulesBox.style.display = 'none';
+  function getFurnitureModules(type) {
+    if (type === 'sillon_3_cuerpos') {
+      return [
+        { tipo: 'asiento', ancho: 180, alto: 18, profundidad: 60, cantidad: 1, activo: true },
+        { tipo: 'respaldo', ancho: 180, alto: 55, profundidad: 18, cantidad: 1, activo: true },
+        { tipo: 'apoyabrazos', ancho: 60, alto: 55, profundidad: 80, cantidad: 2, activo: true }
+      ];
     }
+    if (type === 'otomana') {
+      return [
+        { tipo: 'asiento', ancho: 70, alto: 18, profundidad: 70, cantidad: 1, activo: true },
+        { tipo: 'respaldo', ancho: 70, alto: 40, profundidad: 15, cantidad: 1, activo: false },
+        { tipo: 'apoyabrazos', ancho: 70, alto: 40, profundidad: 18, cantidad: 2, activo: false }
+      ];
+    }
+    if (type === 'silla') {
+      return [
+        { tipo: 'asiento', ancho: 45, alto: 10, profundidad: 45, cantidad: 1, activo: true },
+        { tipo: 'respaldo', ancho: 45, alto: 50, profundidad: 8, cantidad: 1, activo: true },
+        { tipo: 'apoyabrazos', ancho: 45, alto: 40, profundidad: 8, cantidad: 2, activo: false }
+      ];
+    }
+    if (type === 'personalizado') {
+      return [{ tipo: 'asiento', ancho: 0, alto: 0, profundidad: 0, cantidad: 1, activo: true }];
+    }
+    return [
+      { tipo: 'asiento', ancho: 140, alto: 18, profundidad: 60, cantidad: 1, activo: true },
+      { tipo: 'respaldo', ancho: 140, alto: 55, profundidad: 18, cantidad: 1, activo: true },
+      { tipo: 'apoyabrazos', ancho: 60, alto: 55, profundidad: 80, cantidad: 2, activo: true }
+    ];
+  }
+
+  function loadModulesByFurniture() {
+    assistantModules.innerHTML = '';
+    getFurnitureModules(assistantFurnitureType.value).forEach(function (module) {
+      addAssistantModule(module);
+    });
   }
 
   function moduleToPieces(module) {
     var pieces = [];
     var repeat = module.cantidad;
     if (module.tipo === 'asiento') {
-      pieces.push({ alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'asiento', nombre: 'tapa', alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'asiento', nombre: 'frente_fondo', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'asiento', nombre: 'laterales', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
     } else if (module.tipo === 'respaldo') {
-      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
-      pieces.push({ alto: module.profundidad, ancho: module.ancho, cantidad: 1 * repeat });
+      pieces.push({ modulo: 'respaldo', nombre: 'frente_dorso', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'respaldo', nombre: 'laterales', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'respaldo', nombre: 'tapa', alto: module.profundidad, ancho: module.ancho, cantidad: 1 * repeat });
     } else if (module.tipo === 'apoyabrazos') {
-      pieces.push({ alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
-      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 1 * repeat });
+      pieces.push({ modulo: 'apoyabrazos', nombre: 'caras', alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'apoyabrazos', nombre: 'frente_fondo', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'apoyabrazos', nombre: 'tapa', alto: module.alto, ancho: module.ancho, cantidad: 1 * repeat });
     } else if (module.tipo === 'almohadon') {
-      pieces.push({ alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'almohadon', nombre: 'caras', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
       if (module.profundidad > 0) {
-        pieces.push({ alto: (module.alto * 2) + (module.ancho * 2), ancho: module.profundidad, cantidad: 1 * repeat });
+        pieces.push({ modulo: 'almohadon', nombre: 'fuelle', alto: (module.alto * 2) + (module.ancho * 2), ancho: module.profundidad, cantidad: 1 * repeat });
       }
     }
     return pieces;
@@ -858,13 +934,16 @@ if ($soloDetalle) {
     var rows = Array.prototype.slice.call(assistantPieces.querySelectorAll('.piece-grid-row'));
     var result = [];
     rows.forEach(function (row) {
+      var usar = row.querySelector('.pieza-usar').checked;
       var alto = parseNumber(row.querySelector('.pieza-alto').value, 0);
       var ancho = parseNumber(row.querySelector('.pieza-ancho').value, 0);
       var cantidad = Math.max(1, Math.round(parseNumber(row.querySelector('.pieza-cantidad').value, 1)));
-      if (alto <= 0 || ancho <= 0 || cantidad <= 0) {
+      if (!usar || alto <= 0 || ancho <= 0 || cantidad <= 0) {
         return;
       }
       result.push({
+        modulo: row.querySelector('.pieza-modulo').value || 'modulo',
+        nombre: row.querySelector('.pieza-nombre').value || 'pieza',
         alto: alto,
         ancho: ancho,
         cantidad: cantidad
@@ -1004,15 +1083,12 @@ if ($soloDetalle) {
     assistantInsumoId.value = '';
     assistantInsumoNuevo.value = '';
     assistantCosto.value = '0';
-    assistantMode.value = 'libre';
-    updateAssistantMode();
-    assistantModules.innerHTML = '';
-    addAssistantModule({ tipo: 'asiento', ancho: 60, alto: 15, profundidad: 60, cantidad: 1 });
+    assistantFurnitureType.value = 'sillon_2_cuerpos';
+    loadModulesByFurniture();
     assistantPieces.innerHTML = '';
-    addAssistantPiece({ alto: 60, ancho: 60, cantidad: 1 });
     assistantType.value = 'tela';
     updateAssistantTypeFields();
-    assistantResult.textContent = 'Completá los datos y presioná "Calcular".';
+    assistantResult.textContent = 'Generá piezas desde módulos y elegí cuáles usar para este insumo.';
     lastAssistantResult = null;
     if (typeof assistantModal.showModal === 'function') {
       assistantModal.showModal();
@@ -1102,14 +1178,14 @@ if ($soloDetalle) {
   });
 
   assistantType.addEventListener('change', updateAssistantTypeFields);
-  assistantMode.addEventListener('change', updateAssistantMode);
+  assistantFurnitureType.addEventListener('change', loadModulesByFurniture);
 
   assistantAddPiece.addEventListener('click', function () {
-    addAssistantPiece({ alto: 0, ancho: 0, cantidad: 1 });
+    addAssistantPiece({ modulo: 'manual', nombre: 'pieza_manual', alto: 0, ancho: 0, cantidad: 1 });
   });
 
   assistantAddModule.addEventListener('click', function () {
-    addAssistantModule({ tipo: 'asiento', ancho: 0, alto: 0, profundidad: 0, cantidad: 1 });
+    addAssistantModule({ tipo: 'asiento', ancho: 0, alto: 0, profundidad: 0, cantidad: 1, activo: true });
   });
 
   assistantPieces.addEventListener('click', function (event) {
@@ -1141,12 +1217,16 @@ if ($soloDetalle) {
     assistantPieces.innerHTML = '';
     rows.forEach(function (row) {
       var module = {
+        activo: row.querySelector('.modulo-activo').checked,
         tipo: row.querySelector('.modulo-tipo').value,
         ancho: parseNumber(row.querySelector('.modulo-ancho').value, 0),
         alto: parseNumber(row.querySelector('.modulo-alto').value, 0),
         profundidad: parseNumber(row.querySelector('.modulo-profundidad').value, 0),
         cantidad: Math.max(1, Math.round(parseNumber(row.querySelector('.modulo-cantidad').value, 1)))
       };
+      if (!module.activo) {
+        return;
+      }
       moduleToPieces(module).forEach(function (piece) {
         if (piece.alto > 0 && piece.ancho > 0 && piece.cantidad > 0) {
           addAssistantPiece(piece);
@@ -1214,7 +1294,7 @@ if ($soloDetalle) {
   addItem();
   addItem();
   updateAssistantTypeFields();
-  updateAssistantMode();
+  loadModulesByFurniture();
 })();
 </script>
 <?php render_page_end(); ?>
