@@ -103,6 +103,7 @@ function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesBy
     echo '<p><strong>Cliente:</strong> ' . h((string) ($clientesById[(int) ($presupuestoDetalle['cliente_id'] ?? 0)] ?? 'Cliente eliminado')) . '</p>';
     echo '<p><strong>Fecha:</strong> ' . h((string) ($presupuestoDetalle['fecha'] ?? '')) . '</p>';
     echo '<p><strong>Estado:</strong> ' . h((string) ($presupuestoDetalle['estado'] ?? 'borrador')) . '</p>';
+    echo '<p><strong>Tipo de mueble:</strong> ' . h((string) ($presupuestoDetalle['mueble_tipo'] ?? 'no definido')) . '</p>';
     echo '<p><strong>Detalle:</strong> ' . h((string) ($presupuestoDetalle['detalle'] ?? '')) . '</p>';
     echo '<p><strong>Mano de obra:</strong> ' . money($manoObra) . '</p>';
     echo '<p><strong>Materiales:</strong> ' . money($materiales) . '</p>';
@@ -118,6 +119,20 @@ function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesBy
         echo '<td>' . h((string) ($item['unidad'] ?? 'unidad')) . '</td>';
         echo '<td>' . money((float) ($item['costo_unitario'] ?? 0)) . '</td>';
         echo '<td>' . money((float) ($item['subtotal'] ?? 0)) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+    echo '<h4>Piezas para corte</h4>';
+    echo '<table class="table">';
+    echo '<thead><tr><th>Módulo</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Estado</th></tr></thead><tbody>';
+    foreach (($presupuestoDetalle['piezas_corte'] ?? []) as $pieza) {
+        echo '<tr>';
+        echo '<td>' . h((string) ($pieza['modulo'] ?? '')) . '</td>';
+        echo '<td>' . h((string) ($pieza['pieza'] ?? '')) . '</td>';
+        echo '<td>' . (float) ($pieza['alto'] ?? 0) . '</td>';
+        echo '<td>' . (float) ($pieza['ancho'] ?? 0) . '</td>';
+        echo '<td>' . (int) ($pieza['cantidad'] ?? 0) . '</td>';
+        echo '<td>' . h((string) ($pieza['estado'] ?? 'pendiente')) . '</td>';
         echo '</tr>';
     }
     echo '</tbody></table>';
@@ -261,6 +276,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
     }
 
+    $muebleTipo = trim((string) ($_POST['mueble_tipo'] ?? 'personalizado'));
+    $piezasModulo = $_POST['pieza_modulo'] ?? [];
+    $piezasNombre = $_POST['pieza_nombre'] ?? [];
+    $piezasAlto = $_POST['pieza_alto'] ?? [];
+    $piezasAncho = $_POST['pieza_ancho'] ?? [];
+    $piezasCantidad = $_POST['pieza_cantidad'] ?? [];
+    $piezasCorte = [];
+    foreach ($piezasModulo as $i => $piezaModuloRaw) {
+        $piezaModulo = trim((string) $piezaModuloRaw);
+        $piezaNombre = trim((string) ($piezasNombre[$i] ?? 'pieza'));
+        $piezaAlto = (float) ($piezasAlto[$i] ?? 0);
+        $piezaAncho = (float) ($piezasAncho[$i] ?? 0);
+        $piezaCantidad = (int) ($piezasCantidad[$i] ?? 0);
+        if ($piezaAlto <= 0 || $piezaAncho <= 0 || $piezaCantidad <= 0) {
+            continue;
+        }
+        $piezasCorte[] = [
+            'modulo' => $piezaModulo === '' ? 'modulo' : $piezaModulo,
+            'pieza' => $piezaNombre === '' ? 'pieza' : $piezaNombre,
+            'alto' => $piezaAlto,
+            'ancho' => $piezaAncho,
+            'cantidad' => $piezaCantidad,
+            'estado' => 'pendiente',
+        ];
+    }
+
     write_json(data_file('insumos'), $insumos);
 
     $subtotal = $manoObra + $materiales;
@@ -273,9 +314,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'id' => next_id($presupuestos),
         'cliente_id' => $clienteId,
         'detalle' => $detalle,
+        'mueble_tipo' => $muebleTipo === '' ? 'personalizado' : $muebleTipo,
         'mano_obra' => $manoObra,
         'materiales' => round($materiales, 2),
         'insumos_estimados' => $insumosEstimados,
+        'piezas_corte' => $piezasCorte,
         'margen' => $margen,
         'impuesto' => $impuesto,
         'total' => round($total, 2),
@@ -302,66 +345,6 @@ if (!in_array($orden, $allowedSorts, true)) {
 if ($direccion !== 'asc' && $direccion !== 'desc') {
     $direccion = 'desc';
 }
-if ($direccion !== 'asc' && $direccion !== 'desc') {
-    $direccion = 'desc';
-}
-if ($direccion !== 'asc' && $direccion !== 'desc') {
-    $direccion = 'desc';
-}
-
-$presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
-    if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
-        return false;
-    }
-    if ($filtroEstado !== '' && (string) ($presupuesto['estado'] ?? '') !== $filtroEstado) {
-        return false;
-    }
-
-    return true;
-}));
-
-usort($presupuestosListado, static function (array $a, array $b) use ($orden, $direccion, $clientesById): int {
-    if ($orden === 'cliente') {
-        $valA = strtolower((string) ($clientesById[(int) ($a['cliente_id'] ?? 0)] ?? ''));
-        $valB = strtolower((string) ($clientesById[(int) ($b['cliente_id'] ?? 0)] ?? ''));
-    } elseif ($orden === 'estado') {
-        $valA = strtolower((string) ($a['estado'] ?? ''));
-        $valB = strtolower((string) ($b['estado'] ?? ''));
-    } else {
-        $valA = (string) ($a['fecha'] ?? '');
-        $valB = (string) ($b['fecha'] ?? '');
-    }
-
-    $result = $valA <=> $valB;
-    return $direccion === 'asc' ? $result : -$result;
-});
-
-$presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
-    if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
-        return false;
-    }
-    if ($filtroEstado !== '' && (string) ($presupuesto['estado'] ?? '') !== $filtroEstado) {
-        return false;
-    }
-
-    return true;
-}));
-
-usort($presupuestosListado, static function (array $a, array $b) use ($orden, $direccion, $clientesById): int {
-    if ($orden === 'cliente') {
-        $valA = strtolower((string) ($clientesById[(int) ($a['cliente_id'] ?? 0)] ?? ''));
-        $valB = strtolower((string) ($clientesById[(int) ($b['cliente_id'] ?? 0)] ?? ''));
-    } elseif ($orden === 'estado') {
-        $valA = strtolower((string) ($a['estado'] ?? ''));
-        $valB = strtolower((string) ($b['estado'] ?? ''));
-    } else {
-        $valA = (string) ($a['fecha'] ?? '');
-        $valB = (string) ($b['fecha'] ?? '');
-    }
-
-    $result = $valA <=> $valB;
-    return $direccion === 'asc' ? $result : -$result;
-});
 
 $presupuestosListado = array_values(array_filter($presupuestos, static function (array $presupuesto) use ($filtroCliente, $filtroEstado): bool {
     if ($filtroCliente > 0 && (int) ($presupuesto['cliente_id'] ?? 0) !== $filtroCliente) {
@@ -423,6 +406,48 @@ if ($soloDetalle) {
   <label>Margen (%)
     <input type="number" step="0.01" name="margen" value="30" required>
   </label>
+
+  <fieldset style="grid-column: 1 / -1;">
+    <legend>Mueble y piezas</legend>
+    <p class="muted">Definí una sola vez el mueble y módulos para todo el presupuesto. El asistente usa estas piezas para cada insumo.</p>
+    <div class="form-grid">
+      <label>Tipo de mueble
+        <select id="asistente-tipo-mueble" name="mueble_tipo">
+          <option value="sillon_2_cuerpos">Sillón 2 cuerpos</option>
+          <option value="sillon_3_cuerpos">Sillón 3 cuerpos</option>
+          <option value="otomana">Otomana</option>
+          <option value="silla">Silla / Butaca</option>
+          <option value="personalizado">Personalizado</option>
+        </select>
+      </label>
+    </div>
+    <div class="piece-grid-head assistant-module-head" style="grid-template-columns:70px 120px repeat(4,minmax(80px,1fr)) 36px; margin-top:8px;">
+      <strong>Activo</strong>
+      <strong>Módulo</strong>
+      <strong>Ancho</strong>
+      <strong>Alto</strong>
+      <strong>Prof.</strong>
+      <strong>Cant.</strong>
+      <span></span>
+    </div>
+    <div id="asistente-modulos"></div>
+    <div class="inline-actions">
+      <button type="button" id="agregar-modulo-asistente" class="secondary-btn">+ Agregar módulo</button>
+      <button type="button" id="generar-piezas-modulos" class="secondary-btn">Generar checklist de piezas</button>
+    </div>
+
+    <div class="piece-grid-head assistant-piece-head" style="grid-template-columns:120px 130px repeat(3,minmax(70px,1fr)) 70px 36px; margin-top:12px;">
+      <strong>Módulo</strong>
+      <strong>Pieza</strong>
+      <strong>Alto</strong>
+      <strong>Ancho</strong>
+      <strong>Cant.</strong>
+      <strong>Usar</strong>
+      <span></span>
+    </div>
+    <div id="asistente-piezas"></div>
+    <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza manual</button>
+  </fieldset>
 
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
@@ -598,53 +623,7 @@ if ($soloDetalle) {
 <dialog id="asistente-insumo-modal" style="border:1px solid #d1d5db;border-radius:8px;max-width:740px;width:95%;padding:14px;">
   <form method="dialog" id="asistente-insumo-form" class="dialog-form">
     <h3 style="margin:0;">Asistente de insumos</h3>
-    <p class="muted" style="margin:0;">Primero definí el mueble y sus módulos. Después calculá cada tipo de insumo usando el checklist de piezas.</p>
-
-    <div class="form-grid">
-      <label>Tipo de mueble
-        <select id="asistente-tipo-mueble">
-          <option value="sillon_2_cuerpos">Sillón 2 cuerpos</option>
-          <option value="sillon_3_cuerpos">Sillón 3 cuerpos</option>
-          <option value="otomana">Otomana</option>
-          <option value="silla">Silla / Butaca</option>
-          <option value="personalizado">Personalizado</option>
-        </select>
-      </label>
-    </div>
-
-    <fieldset id="asistente-modulos-box">
-      <legend>Módulos del mueble</legend>
-      <p class="muted">Activá solo los módulos que aplican y cargá medidas. Ej: una otomana no usa respaldo.</p>
-      <div class="piece-grid-head assistant-module-head" style="grid-template-columns:70px 120px repeat(4,minmax(80px,1fr)) 36px;">
-        <strong>Activo</strong>
-        <strong>Módulo</strong>
-        <strong>Ancho</strong>
-        <strong>Alto</strong>
-        <strong>Prof.</strong>
-        <strong>Cant.</strong>
-        <span></span>
-      </div>
-      <div id="asistente-modulos"></div>
-      <div class="inline-actions">
-        <button type="button" id="agregar-modulo-asistente" class="secondary-btn">+ Agregar módulo</button>
-        <button type="button" id="generar-piezas-modulos" class="secondary-btn">Generar checklist de piezas</button>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Checklist de piezas</legend>
-      <div class="piece-grid-head assistant-piece-head" style="grid-template-columns:120px 130px repeat(3,minmax(70px,1fr)) 70px 36px;">
-        <strong>Módulo</strong>
-        <strong>Pieza</strong>
-        <strong>Alto</strong>
-        <strong>Ancho</strong>
-        <strong>Cant.</strong>
-        <strong>Usar</strong>
-        <span></span>
-      </div>
-      <div id="asistente-piezas"></div>
-      <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza manual</button>
-    </fieldset>
+    <p class="muted" style="margin:0;">Toma las piezas cargadas en “Mueble y piezas” para calcular la cantidad sugerida del insumo.</p>
 
     <fieldset>
       <legend>Insumo a calcular</legend>
@@ -826,11 +805,11 @@ if ($soloDetalle) {
     row.className = 'piece-grid-row';
     row.style.gridTemplateColumns = '120px 130px repeat(3,minmax(70px,1fr)) 70px 36px';
     row.innerHTML = ''
-      + '<input type="text" class="pieza-modulo" value="' + (values && values.modulo ? values.modulo : 'manual') + '">'
-      + '<input type="text" class="pieza-nombre" value="' + (values && values.nombre ? values.nombre : 'pieza') + '">'
-      + '<input type="number" class="pieza-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
-      + '<input type="number" class="pieza-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
-      + '<input type="number" class="pieza-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
+      + '<input type="text" name="pieza_modulo[]" class="pieza-modulo" value="' + (values && values.modulo ? values.modulo : 'manual') + '">'
+      + '<input type="text" name="pieza_nombre[]" class="pieza-nombre" value="' + (values && values.nombre ? values.nombre : 'pieza') + '">'
+      + '<input type="number" name="pieza_alto[]" class="pieza-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
+      + '<input type="number" name="pieza_ancho[]" class="pieza-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
+      + '<input type="number" name="pieza_cantidad[]" class="pieza-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
       + '<label style="display:flex;justify-content:center;"><input type="checkbox" class="pieza-usar" ' + (values && values.usar === false ? '' : 'checked') + '></label>'
       + '<button type="button" class="danger-btn remove-pieza" style="width:30px;height:30px;padding:0;">X</button>';
     assistantPieces.appendChild(row);
@@ -841,17 +820,17 @@ if ($soloDetalle) {
     row.className = 'piece-grid-row module-row';
     row.style.gridTemplateColumns = '70px 120px repeat(4,minmax(80px,1fr)) 36px';
     row.innerHTML = ''
-      + '<label style="display:flex;justify-content:center;"><input type="checkbox" class="modulo-activo" ' + (values && values.activo === false ? '' : 'checked') + '></label>'
-      + '<select class="modulo-tipo">'
+      + '<label style="display:flex;justify-content:center;"><input type="checkbox" class="modulo-activo" name="mueble_modulo_activo[]" value="1" ' + (values && values.activo === false ? '' : 'checked') + '></label>'
+      + '<select class="modulo-tipo" name="mueble_modulo_tipo[]">'
       + '  <option value="asiento">Asiento</option>'
       + '  <option value="respaldo">Respaldo</option>'
       + '  <option value="apoyabrazos">Apoyabrazos</option>'
       + '  <option value="almohadon">Almohadón</option>'
       + '</select>'
-      + '<input type="number" class="modulo-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
-      + '<input type="number" class="modulo-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
-      + '<input type="number" class="modulo-profundidad" min="0" step="0.01" value="' + (values && values.profundidad ? values.profundidad : 0) + '">'
-      + '<input type="number" class="modulo-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
+      + '<input type="number" class="modulo-ancho" name="mueble_modulo_ancho[]" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
+      + '<input type="number" class="modulo-alto" name="mueble_modulo_alto[]" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
+      + '<input type="number" class="modulo-profundidad" name="mueble_modulo_profundidad[]" min="0" step="0.01" value="' + (values && values.profundidad ? values.profundidad : 0) + '">'
+      + '<input type="number" class="modulo-cantidad" name="mueble_modulo_cantidad[]" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
       + '<button type="button" class="danger-btn remove-modulo" style="width:30px;height:30px;padding:0;">X</button>';
     assistantModules.appendChild(row);
     if (values && values.tipo) {
@@ -1083,12 +1062,9 @@ if ($soloDetalle) {
     assistantInsumoId.value = '';
     assistantInsumoNuevo.value = '';
     assistantCosto.value = '0';
-    assistantFurnitureType.value = 'sillon_2_cuerpos';
-    loadModulesByFurniture();
-    assistantPieces.innerHTML = '';
     assistantType.value = 'tela';
     updateAssistantTypeFields();
-    assistantResult.textContent = 'Generá piezas desde módulos y elegí cuáles usar para este insumo.';
+    assistantResult.textContent = 'Usá el checklist de piezas del formulario para este cálculo.';
     lastAssistantResult = null;
     if (typeof assistantModal.showModal === 'function') {
       assistantModal.showModal();
