@@ -123,19 +123,30 @@ function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesBy
     }
     echo '</tbody></table>';
     echo '<h4>Piezas para corte</h4>';
-    echo '<table class="table">';
-    echo '<thead><tr><th>Módulo</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Estado</th></tr></thead><tbody>';
+    $piezasPorTipo = [];
     foreach (($presupuestoDetalle['piezas_corte'] ?? []) as $pieza) {
-        echo '<tr>';
-        echo '<td>' . h((string) ($pieza['modulo'] ?? '')) . '</td>';
-        echo '<td>' . h((string) ($pieza['pieza'] ?? '')) . '</td>';
-        echo '<td>' . (float) ($pieza['alto'] ?? 0) . '</td>';
-        echo '<td>' . (float) ($pieza['ancho'] ?? 0) . '</td>';
-        echo '<td>' . (int) ($pieza['cantidad'] ?? 0) . '</td>';
-        echo '<td>' . h((string) ($pieza['estado'] ?? 'pendiente')) . '</td>';
-        echo '</tr>';
+        $tipo = (string) ($pieza['insumo_tipo'] ?? 'otros');
+        if (!isset($piezasPorTipo[$tipo])) {
+            $piezasPorTipo[$tipo] = [];
+        }
+        $piezasPorTipo[$tipo][] = $pieza;
     }
-    echo '</tbody></table>';
+    foreach ($piezasPorTipo as $tipo => $piezas) {
+        echo '<h5 style="margin-bottom:6px;">' . h(ucfirst($tipo)) . '</h5>';
+        echo '<table class="table">';
+        echo '<thead><tr><th>Módulo</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Estado</th></tr></thead><tbody>';
+        foreach ($piezas as $pieza) {
+            echo '<tr>';
+            echo '<td>' . h((string) ($pieza['modulo'] ?? '')) . '</td>';
+            echo '<td>' . h((string) ($pieza['pieza'] ?? '')) . '</td>';
+            echo '<td>' . (float) ($pieza['alto'] ?? 0) . '</td>';
+            echo '<td>' . (float) ($pieza['ancho'] ?? 0) . '</td>';
+            echo '<td>' . (int) ($pieza['cantidad'] ?? 0) . '</td>';
+            echo '<td>' . h((string) ($pieza['estado'] ?? 'pendiente')) . '</td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
+    }
     echo '</section>';
 }
 
@@ -163,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $manoObra = (float) ($_POST['mano_obra'] ?? 0);
         $margen = (float) ($_POST['margen'] ?? 0);
         $estado = trim((string) ($_POST['estado'] ?? 'borrador'));
-        $impuesto = (float) ($config['impuesto'] ?? 0);
+        $impuesto = 0.0;
 
         if ($id <= 0 || $clienteId <= 0) {
             redirect_with_message('presupuesto_nuevo.php', 'Faltan datos obligatorios para editar el presupuesto.');
@@ -178,8 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $subtotal = $manoObra + $materiales;
             $recargo = $subtotal * ($margen / 100);
             $base = $subtotal + $recargo;
-            $impuestos = $base * $impuesto;
-            $total = $base + $impuestos;
+            $total = $base;
 
             $presupuesto['cliente_id'] = $clienteId;
             $presupuesto['detalle'] = $detalle;
@@ -200,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
     $margen = (float) ($_POST['margen'] ?? 0);
-    $impuesto = (float) ($config['impuesto'] ?? 0);
+    $impuesto = 0.0;
 
     if ($clienteId <= 0) {
         redirect_with_message('presupuesto_nuevo.php', 'Debe seleccionar un cliente.');
@@ -279,6 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $muebleTipo = trim((string) ($_POST['mueble_tipo'] ?? 'personalizado'));
     $piezasModulo = $_POST['pieza_modulo'] ?? [];
     $piezasNombre = $_POST['pieza_nombre'] ?? [];
+    $piezasInsumoTipo = $_POST['pieza_insumo_tipo'] ?? [];
     $piezasAlto = $_POST['pieza_alto'] ?? [];
     $piezasAncho = $_POST['pieza_ancho'] ?? [];
     $piezasCantidad = $_POST['pieza_cantidad'] ?? [];
@@ -286,6 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($piezasModulo as $i => $piezaModuloRaw) {
         $piezaModulo = trim((string) $piezaModuloRaw);
         $piezaNombre = trim((string) ($piezasNombre[$i] ?? 'pieza'));
+        $piezaInsumoTipo = trim((string) ($piezasInsumoTipo[$i] ?? 'otros'));
         $piezaAlto = (float) ($piezasAlto[$i] ?? 0);
         $piezaAncho = (float) ($piezasAncho[$i] ?? 0);
         $piezaCantidad = (int) ($piezasCantidad[$i] ?? 0);
@@ -295,6 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $piezasCorte[] = [
             'modulo' => $piezaModulo === '' ? 'modulo' : $piezaModulo,
             'pieza' => $piezaNombre === '' ? 'pieza' : $piezaNombre,
+            'insumo_tipo' => $piezaInsumoTipo === '' ? 'otros' : $piezaInsumoTipo,
             'alto' => $piezaAlto,
             'ancho' => $piezaAncho,
             'cantidad' => $piezaCantidad,
@@ -307,8 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subtotal = $manoObra + $materiales;
     $recargo = $subtotal * ($margen / 100);
     $base = $subtotal + $recargo;
-    $impuestos = $base * $impuesto;
-    $total = $base + $impuestos;
+    $total = $base;
 
     $presupuestos[] = [
         'id' => next_id($presupuestos),
@@ -436,9 +448,10 @@ if ($soloDetalle) {
       <button type="button" id="generar-piezas-modulos" class="secondary-btn">Generar checklist de piezas</button>
     </div>
 
-    <div class="piece-grid-head assistant-piece-head" style="grid-template-columns:120px 130px repeat(3,minmax(70px,1fr)) 70px 36px; margin-top:12px;">
+    <div class="piece-grid-head assistant-piece-head" style="grid-template-columns:110px 120px 110px repeat(3,minmax(65px,1fr)) 70px 36px; margin-top:12px;">
       <strong>Módulo</strong>
       <strong>Pieza</strong>
+      <strong>Insumo</strong>
       <strong>Alto</strong>
       <strong>Ancho</strong>
       <strong>Cant.</strong>
@@ -454,18 +467,18 @@ if ($soloDetalle) {
 
   <fieldset style="grid-column: 1 / -1;">
     <legend>Estimación de insumos</legend>
-    <p class="muted">3 renglones iniciales. Botón + para agregar y X para eliminar.</p>
+    <p class="muted">Podés cargar insumos manualmente o usar el asistente desde el checklist de piezas.</p>
     <div class="insumo-row insumo-row-head">
       <strong>Categoría</strong>
       <strong>Insumo existente</strong>
       <strong>Cantidad</strong>
       <strong>Costo unitario</strong>
+      <strong>Subtotal</strong>
       <span></span>
     </div>
     <div id="insumos-items"></div>
     <div class="inline-actions">
       <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
-      <a href="presupuesto_nuevo.php?export=csv" class="secondary-btn excel-btn action-link">Exportar presupuestos (Excel)</a>
     </div>
   </fieldset>
 
@@ -605,6 +618,7 @@ if ($soloDetalle) {
 
     <input type="number" step="0.01" min="0" name="cantidad[]" value="0" style="width:100%;">
     <input type="number" step="0.01" min="0" name="costo_unitario[]" value="0" style="width:100%;">
+    <input type="number" step="0.01" min="0" class="insumo-subtotal" value="0" readonly style="width:100%;background:#f9fafb;">
     <button type="button" class="danger-btn insumo-remove remove-insumo" aria-label="Eliminar insumo" style="width:30px;height:30px;padding:0;line-height:1;justify-self:center;">X</button>
   </div>
 </template>
@@ -736,7 +750,22 @@ if ($soloDetalle) {
     container.appendChild(node);
     var row = container.lastElementChild;
     applyCategoryFilter(row);
+    updateRowSubtotal(row);
     return row;
+  }
+
+  function updateRowSubtotal(row) {
+    if (!row) {
+      return;
+    }
+    var cantidadInput = row.querySelector('input[name="cantidad[]"]');
+    var costoInput = row.querySelector('input[name="costo_unitario[]"]');
+    var subtotalInput = row.querySelector('.insumo-subtotal');
+    if (!cantidadInput || !costoInput || !subtotalInput) {
+      return;
+    }
+    var subtotal = parseNumber(cantidadInput.value, 0) * parseNumber(costoInput.value, 0);
+    subtotalInput.value = subtotal.toFixed(2);
   }
 
   function applyInsumoSelectionToRow(row, insumoId, insumoNuevo, categoria) {
@@ -805,16 +834,26 @@ if ($soloDetalle) {
   function addAssistantPiece(values) {
     var row = document.createElement('div');
     row.className = 'piece-grid-row';
-    row.style.gridTemplateColumns = '120px 130px repeat(3,minmax(70px,1fr)) 70px 36px';
+    row.style.gridTemplateColumns = '110px 120px 110px repeat(3,minmax(65px,1fr)) 70px 36px';
     row.innerHTML = ''
       + '<input type="text" name="pieza_modulo[]" class="pieza-modulo" value="' + (values && values.modulo ? values.modulo : 'manual') + '">'
       + '<input type="text" name="pieza_nombre[]" class="pieza-nombre" value="' + (values && values.nombre ? values.nombre : 'pieza') + '">'
+      + '<select name="pieza_insumo_tipo[]" class="pieza-insumo-tipo">'
+      + '  <option value="tela">Tela</option>'
+      + '  <option value="gomaespuma">Gomaespuma</option>'
+      + '  <option value="fleje">Fleje</option>'
+      + '  <option value="cierre">Cierre</option>'
+      + '  <option value="otros">Otros</option>'
+      + '</select>'
       + '<input type="number" name="pieza_alto[]" class="pieza-alto" min="0" step="0.01" value="' + (values && values.alto ? values.alto : 0) + '">'
       + '<input type="number" name="pieza_ancho[]" class="pieza-ancho" min="0" step="0.01" value="' + (values && values.ancho ? values.ancho : 0) + '">'
       + '<input type="number" name="pieza_cantidad[]" class="pieza-cantidad" min="1" step="1" value="' + (values && values.cantidad ? values.cantidad : 1) + '">'
       + '<label style="display:flex;justify-content:center;"><input type="checkbox" class="pieza-usar" ' + (values && values.usar === false ? '' : 'checked') + '></label>'
       + '<button type="button" class="danger-btn remove-pieza" style="width:30px;height:30px;padding:0;">X</button>';
     assistantPieces.appendChild(row);
+    if (values && values.insumo_tipo) {
+      row.querySelector('.pieza-insumo-tipo').value = values.insumo_tipo;
+    }
   }
 
   function addAssistantModule(values) {
@@ -883,21 +922,21 @@ if ($soloDetalle) {
     var pieces = [];
     var repeat = module.cantidad;
     if (module.tipo === 'asiento') {
-      pieces.push({ modulo: 'asiento', nombre: 'tapa', alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ modulo: 'asiento', nombre: 'frente_fondo', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ modulo: 'asiento', nombre: 'laterales', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'asiento', nombre: 'tapa', insumo_tipo: 'tela', alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'asiento', nombre: 'frente_fondo', insumo_tipo: 'tela', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'asiento', nombre: 'laterales', insumo_tipo: 'tela', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
     } else if (module.tipo === 'respaldo') {
-      pieces.push({ modulo: 'respaldo', nombre: 'frente_dorso', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ modulo: 'respaldo', nombre: 'laterales', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
-      pieces.push({ modulo: 'respaldo', nombre: 'tapa', alto: module.profundidad, ancho: module.ancho, cantidad: 1 * repeat });
+      pieces.push({ modulo: 'respaldo', nombre: 'frente_dorso', insumo_tipo: 'tela', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'respaldo', nombre: 'laterales', insumo_tipo: 'tela', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'respaldo', nombre: 'tapa', insumo_tipo: 'tela', alto: module.profundidad, ancho: module.ancho, cantidad: 1 * repeat });
     } else if (module.tipo === 'apoyabrazos') {
-      pieces.push({ modulo: 'apoyabrazos', nombre: 'caras', alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
-      pieces.push({ modulo: 'apoyabrazos', nombre: 'frente_fondo', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
-      pieces.push({ modulo: 'apoyabrazos', nombre: 'tapa', alto: module.alto, ancho: module.ancho, cantidad: 1 * repeat });
+      pieces.push({ modulo: 'apoyabrazos', nombre: 'caras', insumo_tipo: 'tela', alto: module.profundidad, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'apoyabrazos', nombre: 'frente_fondo', insumo_tipo: 'tela', alto: module.alto, ancho: module.profundidad, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'apoyabrazos', nombre: 'tapa', insumo_tipo: 'tela', alto: module.alto, ancho: module.ancho, cantidad: 1 * repeat });
     } else if (module.tipo === 'almohadon') {
-      pieces.push({ modulo: 'almohadon', nombre: 'caras', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
+      pieces.push({ modulo: 'almohadon', nombre: 'caras', insumo_tipo: 'tela', alto: module.alto, ancho: module.ancho, cantidad: 2 * repeat });
       if (module.profundidad > 0) {
-        pieces.push({ modulo: 'almohadon', nombre: 'fuelle', alto: (module.alto * 2) + (module.ancho * 2), ancho: module.profundidad, cantidad: 1 * repeat });
+        pieces.push({ modulo: 'almohadon', nombre: 'fuelle', insumo_tipo: 'tela', alto: (module.alto * 2) + (module.ancho * 2), ancho: module.profundidad, cantidad: 1 * repeat });
       }
     }
     return pieces;
@@ -912,19 +951,22 @@ if ($soloDetalle) {
   }
 
   function readPieces() {
+    var activeType = assistantType.value;
     var rows = Array.prototype.slice.call(assistantPieces.querySelectorAll('.piece-grid-row'));
     var result = [];
     rows.forEach(function (row) {
       var usar = row.querySelector('.pieza-usar').checked;
+      var insumoTipo = row.querySelector('.pieza-insumo-tipo').value;
       var alto = parseNumber(row.querySelector('.pieza-alto').value, 0);
       var ancho = parseNumber(row.querySelector('.pieza-ancho').value, 0);
       var cantidad = Math.max(1, Math.round(parseNumber(row.querySelector('.pieza-cantidad').value, 1)));
-      if (!usar || alto <= 0 || ancho <= 0 || cantidad <= 0) {
+      if (!usar || (insumoTipo !== activeType && insumoTipo !== 'otros') || alto <= 0 || ancho <= 0 || cantidad <= 0) {
         return;
       }
       result.push({
         modulo: row.querySelector('.pieza-modulo').value || 'modulo',
         nombre: row.querySelector('.pieza-nombre').value || 'pieza',
+        insumo_tipo: insumoTipo,
         alto: alto,
         ancho: ancho,
         cantidad: cantidad
@@ -1121,6 +1163,15 @@ if ($soloDetalle) {
 
     hiddenInput.value = '';
     label.textContent = '';
+    updateRowSubtotal(row);
+  });
+
+  container.addEventListener('input', function (event) {
+    if (!event.target.matches('input[name="cantidad[]"], input[name="costo_unitario[]"]')) {
+      return;
+    }
+    var row = event.target.closest('.insumo-item');
+    updateRowSubtotal(row);
   });
 
   modalForm.addEventListener('submit', function (event) {
@@ -1264,13 +1315,11 @@ if ($soloDetalle) {
     if (costoInput) {
       costoInput.value = parseNumber(assistantCosto.value, 0).toFixed(2);
     }
+    updateRowSubtotal(row);
 
     assistantModal.close();
   });
 
-  addItem();
-  addItem();
-  addItem();
   updateAssistantTypeFields();
   loadModulesByFurniture();
 })();
