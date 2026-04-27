@@ -446,7 +446,10 @@ if ($soloDetalle) {
       <span></span>
     </div>
     <div id="asistente-piezas"></div>
-    <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza manual</button>
+    <div class="inline-actions">
+      <button type="button" id="agregar-pieza-asistente" class="secondary-btn">+ Agregar pieza manual</button>
+      <button type="button" id="abrir-asistente-insumo" class="secondary-btn assistant-btn">Asistente de insumos</button>
+    </div>
   </fieldset>
 
   <fieldset style="grid-column: 1 / -1;">
@@ -462,7 +465,6 @@ if ($soloDetalle) {
     <div id="insumos-items"></div>
     <div class="inline-actions">
       <button type="button" id="agregar-insumo" class="secondary-btn">+ Agregar insumo</button>
-      <button type="button" id="abrir-asistente-insumo" class="secondary-btn assistant-btn">Asistente de insumos</button>
       <a href="presupuesto_nuevo.php?export=csv" class="secondary-btn excel-btn action-link">Exportar presupuestos (Excel)</a>
     </div>
   </fieldset>
