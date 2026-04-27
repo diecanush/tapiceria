@@ -32,6 +32,18 @@ body {
 input, select, button {
   width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;
 }
+a.secondary-btn,
+a.info-btn,
+a.excel-btn,
+a.action-link {
+  width: auto;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
 button { background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
 button:hover { background: #1e40af; }
 .flash { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; padding: 10px; border-radius: 6px; }
@@ -42,6 +54,21 @@ button:hover { background: #1e40af; }
   color: #111827;
 }
 .secondary-btn:hover { background: #e5e7eb; }
+.assistant-btn {
+  background: #ede9fe;
+  color: #4c1d95;
+}
+.assistant-btn:hover { background: #ddd6fe; }
+.info-btn {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+.info-btn:hover { background: #bfdbfe; }
+.excel-btn {
+  background: #dcfce7;
+  color: #166534;
+}
+.excel-btn:hover { background: #bbf7d0; }
 .danger-btn {
   width: auto;
   background: #ef4444;
@@ -72,10 +99,10 @@ button:hover { background: #1e40af; }
 }
 .insumo-row {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(180px, 2fr) 110px 130px 36px;
+  grid-template-columns: 150px minmax(220px, 2fr) 110px 130px 130px 36px;
   gap: 8px;
   align-items: center;
-  min-width: 640px;
+  min-width: 0;
 }
 .insumo-row-head {
   margin: 6px 0;
@@ -88,10 +115,135 @@ button:hover { background: #1e40af; }
 .insumo-row .insumo-remove {
   justify-self: center;
 }
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dialog-form {
+  display: grid;
+  gap: 10px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.piece-grid-head,
+.piece-grid-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 1fr)) 36px;
+  gap: 8px;
+  align-items: center;
+}
+.piece-grid-head {
+  color: #374151;
+  font-size: 13px;
+}
+.assistant-result {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+}
+.action-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.actions-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.presupuestos-table th,
+.presupuestos-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+.presupuestos-table .compact-number {
+  min-width: 90px;
+}
+.presupuestos-table .compact-detalle {
+  min-width: 140px;
+}
+.presupuestos-table .actions-wrap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(86px, auto));
+  gap: 4px;
+}
+.presupuestos-table .actions-wrap .action-link,
+.presupuestos-table .actions-wrap button {
+  width: auto;
+  margin: 0;
+  padding: 6px 8px;
+}
+.presupuestos-table .actions-wrap .danger-btn {
+  margin-left: 0;
+}
+.presupuestos-cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.presupuesto-card-form {
+  display: grid;
+  gap: 8px;
+}
+.presupuesto-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.presupuesto-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+.presupuesto-card-grid .wide {
+  grid-column: span 2;
+}
+.presupuesto-card-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 6px;
+}
+.presupuesto-card-actions .danger-btn {
+  margin-left: 0;
+}
 .mobile-cards { display: none; }
 .mobile-hidden { display: table; }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  dialog {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px auto;
+    padding: 10px !important;
+  }
+  #asistente-insumo-modal,
+  #nuevo-insumo-modal {
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  #asistente-insumo-modal .form-grid {
+    grid-template-columns: 1fr;
+  }
+  #asistente-insumo-modal fieldset {
+    min-width: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  #asistente-insumo-modal .dialog-actions {
+    flex-direction: column;
+  }
+  #asistente-insumo-modal .dialog-actions button {
+    width: 100%;
+  }
   .mobile-hidden { display: none; }
   .mobile-cards {
     display: grid;
@@ -104,5 +256,45 @@ button:hover { background: #1e40af; }
   }
   .insumo-remove {
     justify-self: end;
+  }
+  .actions-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .presupuestos-table .actions-wrap {
+    grid-template-columns: repeat(2, minmax(78px, 1fr));
+  }
+  .presupuesto-card-grid .wide {
+    grid-column: auto;
+  }
+  .presupuesto-card-actions {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+  }
+  .actions-wrap .action-link,
+  .actions-wrap button {
+    width: 100%;
+  }
+  .inline-actions .secondary-btn,
+  .inline-actions .action-link {
+    width: 100%;
+  }
+  .insumo-row {
+    grid-template-columns: 1fr !important;
+    min-width: 0 !important;
+  }
+  .insumo-row-head {
+    display: none;
+  }
+  .insumo-item .insumo-remove {
+    justify-self: end;
+  }
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .piece-grid-head,
+  .piece-grid-row {
+    grid-template-columns: 1fr !important;
   }
 }
