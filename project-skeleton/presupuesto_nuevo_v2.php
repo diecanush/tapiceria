@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $itemAnchosTela = $_POST['item_ancho_tela'] ?? [];
     $itemPreciosManual = $_POST['item_precio_manual'] ?? [];
     $itemSeparacionFleje = $_POST['item_separacion_fleje'] ?? [];
+    $itemConfirmados = $_POST['item_confirmado'] ?? [];
 
     $estructura = [];
     $materiales = 0.0;
@@ -39,6 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     foreach ($itemCapas as $i => $capaRaw) {
+        $confirmado = (int) ($itemConfirmados[$i] ?? 0) === 1;
+        if (!$confirmado) {
+            continue;
+        }
+
         $capa = trim((string) $capaRaw);
         $insumoId = (int) ($itemInsumos[$i] ?? 0);
         if ($capa === '' || $insumoId <= 0 || !isset($insumosById[$insumoId])) {
@@ -144,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($estructura === []) {
-        redirect_with_message('presupuesto_nuevo_v2.php', 'Debe agregar al menos un insumo con módulo, pieza y medidas válidas.');
+        redirect_with_message('presupuesto_nuevo_v2.php', 'Debes confirmar al menos un insumo (botón Confirmar insumo) con módulo, pieza y medidas válidas.');
     }
 
     $subtotal = $manoObra + $materiales;
@@ -268,7 +274,12 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         </div>
       <?php endforeach; ?>
     </details>
-    <p class="muted parcial-insumo" id="parcial_<?= $i ?>">Estimación parcial: completar datos.</p>
+    <input type="hidden" name="item_confirmado[]" value="0" class="confirmado-input" data-index="<?= $i ?>">
+    <div class="inline-actions">
+      <button type="button" class="secondary-btn btn-confirmar" data-index="<?= $i ?>">Confirmar insumo</button>
+      <button type="button" class="secondary-btn btn-editar" data-index="<?= $i ?>" disabled>Modificar</button>
+    </div>
+    <p class="muted parcial-insumo" id="parcial_<?= $i ?>">Estado: pendiente de confirmación.</p>
   </fieldset>
   <?php endfor; ?>
 
@@ -294,6 +305,37 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     return total;
   }
 
+
+  function setReadonlyByIndex(index, state) {
+    document.querySelectorAll('[data-index="' + index + '"]').forEach(function(el) {
+      if (el.classList.contains('btn-confirmar') || el.classList.contains('btn-editar') || el.classList.contains('confirmado-input')) return;
+      if (el.type === 'checkbox' || el.tagName === 'SELECT' || el.tagName === 'INPUT') {
+        el.disabled = state;
+      }
+    });
+  }
+
+  function confirmar(index) {
+    const hidden = document.querySelector('.confirmado-input[data-index="' + index + '"]');
+    if (hidden) hidden.value = '1';
+    setReadonlyByIndex(index, true);
+    document.querySelector('.btn-confirmar[data-index="' + index + '"]').disabled = true;
+    document.querySelector('.btn-editar[data-index="' + index + '"]').disabled = false;
+    const parcial = document.getElementById('parcial_' + index);
+    if (parcial) parcial.textContent = 'Estado: insumo confirmado y listo para guardar en JSON.';
+  }
+
+  function editar(index) {
+    const hidden = document.querySelector('.confirmado-input[data-index="' + index + '"]');
+    if (hidden) hidden.value = '0';
+    setReadonlyByIndex(index, false);
+    document.querySelector('.btn-confirmar[data-index="' + index + '"]').disabled = false;
+    document.querySelector('.btn-editar[data-index="' + index + '"]').disabled = true;
+    const parcial = document.getElementById('parcial_' + index);
+    if (parcial) parcial.textContent = 'Estado: en edición. Presioná Confirmar insumo para incluirlo en JSON.';
+    recalc();
+  }
+
   function recalc() {
     let materiales = 0;
     for (let i = 0; i < 3; i++) {
@@ -301,7 +343,6 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       const precioCatalogo = n(select?.selectedOptions[0]?.dataset?.precio);
       const precioManual = n(document.querySelector('.precio-manual[data-index="' + i + '"]')?.value);
       const precio = precioManual > 0 ? precioManual : precioCatalogo;
-      const unidad = select?.selectedOptions[0]?.dataset?.unidad || 'unidad';
       let manual = n(document.querySelector('.cantidad-manual[data-index="' + i + '"]')?.value);
       const unidad = (document.querySelector('.unidad[data-index="' + i + '"]')?.value || 'm');
       const sepFleje = n(document.querySelector('.separacion-fleje[data-index="' + i + '"]')?.value);
@@ -318,7 +359,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
       const parcial = document.getElementById('parcial_' + i);
       if (parcial) {
-        parcial.textContent = 'Estimación parcial: base ' + base.toFixed(2) + ' m (' + (manual > 0 ? 'manual' : 'piezas') + '), merma ' + merma.toFixed(2) + '%, rendimiento ' + rendimiento.toFixed(2) + ', precio ' + money(precio) + ', costo ' + money(subtotal);
+        const confirmado = document.querySelector('.confirmado-input[data-index="' + i + '"]')?.value === '1';
+        parcial.textContent = (confirmado ? '[Confirmado] ' : '[Pendiente] ') + 'Estimación parcial: base ' + base.toFixed(2) + ' m (' + (manual > 0 ? 'manual' : 'piezas') + '), merma ' + merma.toFixed(2) + '%, rendimiento ' + rendimiento.toFixed(2) + ', precio ' + money(precio) + ', costo ' + money(subtotal);
       }
     }
 
@@ -332,6 +374,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   }
 
   document.getElementById('v2-form')?.addEventListener('input', recalc);
+  document.querySelectorAll('.btn-confirmar').forEach(function(btn){ btn.addEventListener('click', function(){ confirmar(btn.dataset.index); }); });
+  document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
   recalc();
 })();
 </script>
