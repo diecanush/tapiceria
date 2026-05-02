@@ -49,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $piezasElegidas = $_POST['item_piezas_' . $i . '_' . $modulo] ?? [];
-            $piezasLimpias = array_values(array_filter(array_map('strval', (array) $piezasElegidas), static fn(string $pieza): bool => $pieza !== ''));
+            $piezasLimpias = array_values(array_filter(array_map('strval', (array) $piezasElegidas), static function (string $pieza): bool {
+                return $pieza !== '';
+            }));
             if ($piezasLimpias === []) {
                 continue;
             }
