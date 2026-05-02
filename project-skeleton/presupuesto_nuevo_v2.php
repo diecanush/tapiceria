@@ -26,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $itemMermas = $_POST['item_merma'] ?? [];
     $itemRendimientos = $_POST['item_rendimiento'] ?? [];
     $itemCantidades = $_POST['item_cantidad'] ?? [];
+    $itemUnidades = $_POST['item_unidad'] ?? [];
+    $itemAnchosTela = $_POST['item_ancho_tela'] ?? [];
+    $itemPreciosManual = $_POST['item_precio_manual'] ?? [];
+    $itemSeparacionFleje = $_POST['item_separacion_fleje'] ?? [];
 
     $estructura = [];
     $materiales = 0.0;
@@ -85,6 +89,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $cantidadManual = (float) ($itemCantidades[$i] ?? 0);
+        $unidad = (string) ($itemUnidades[$i] ?? 'm');
+        $anchoTela = (float) ($itemAnchosTela[$i] ?? 0);
+        $precioManual = (float) ($itemPreciosManual[$i] ?? 0);
+        $separacionFleje = (float) ($itemSeparacionFleje[$i] ?? 0);
+
         $areaPiezas = 0.0;
         foreach ($modulosAplicados as $moduloData) {
             foreach ($moduloData['piezas'] as $piezaData) {
@@ -92,10 +101,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        if ($unidad === 'cm') {
+            $areaPiezas = $areaPiezas / 10000;
+            $cantidadManual = $cantidadManual / 100;
+        }
+
         $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
+        if ((string) ($insumosById[$insumoId]['categoria'] ?? '') === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
+            $cantidadBase = $areaPiezas / $separacionFleje;
+        }
         $merma = (float) ($itemMermas[$i] ?? 0);
         $rendimiento = max(0.0001, (float) ($itemRendimientos[$i] ?? 1));
-        $costoUnitario = (float) ($insumosById[$insumoId]['precio'] ?? 0);
+        $costoUnitario = $precioManual > 0 ? $precioManual : (float) ($insumosById[$insumoId]['precio'] ?? 0);
         $cantidadFinal = ($cantidadBase * (1 + ($merma / 100))) / $rendimiento;
         $subtotal = $cantidadFinal * $costoUnitario;
 
@@ -111,6 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'modulos' => $modulosAplicados,
             'parametros_calculo' => [
                 'cantidad_manual' => $cantidadManual,
+                'unidad_carga' => $unidad,
+                'ancho_tela' => $anchoTela,
+                'separacion_fleje' => $separacionFleje,
                 'cantidad_base' => round($cantidadBase, 4),
                 'base_origen' => $cantidadManual > 0 ? 'manual' : 'piezas',
                 'merma_pct' => $merma,
@@ -151,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 render_page_start('Presupuesto nuevo (V2 por insumo)');
 ?>
-<p class="muted">Ahora podés confirmar piezas por módulo con medidas (alto x ancho x cantidad) y ver una estimación parcial por insumo antes de guardar.</p>
+<p class="muted">Cargá medidas en cm o m. Merma = % extra por desperdicio. Rendimiento = eficiencia del uso (1 = normal). Si elegís fleje, podés indicar separación para estimar tiras.</p>
 <form method="post" class="form-grid" id="v2-form">
   <label>Cliente
     <select name="cliente_id" required>
@@ -199,14 +219,30 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
           <?php endforeach; ?>
         </select>
       </label>
-      <label>Cantidad base manual (opcional)
+      <label>Cantidad final manual (opcional)
         <input type="number" name="item_cantidad[]" step="0.01" min="0" value="0" class="cantidad-manual" data-index="<?= $i ?>">
       </label>
       <label>Merma %
         <input type="number" name="item_merma[]" step="0.01" min="0" value="10" class="merma" data-index="<?= $i ?>">
       </label>
-      <label>Rendimiento
+      <label>Rendimiento (ej: 0.90 = 10% pérdida adicional)
         <input type="number" name="item_rendimiento[]" step="0.01" min="0.01" value="1" class="rendimiento" data-index="<?= $i ?>">
+      </label>
+
+      <label>Unidad de carga
+        <select name="item_unidad[]" class="unidad" data-index="<?= $i ?>">
+          <option value="m">Metros</option>
+          <option value="cm">Centímetros</option>
+        </select>
+      </label>
+      <label>Ancho útil tela/placa (m)
+        <input type="number" name="item_ancho_tela[]" step="0.01" min="0" value="1.40" class="ancho-tela" data-index="<?= $i ?>">
+      </label>
+      <label>Precio unitario (opcional)
+        <input type="number" name="item_precio_manual[]" step="0.01" min="0" value="0" class="precio-manual" data-index="<?= $i ?>" placeholder="Si va vacío usa catálogo">
+      </label>
+      <label>Separación fleje (m)
+        <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="0" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
       </label>
     </div>
 
@@ -262,20 +298,27 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     let materiales = 0;
     for (let i = 0; i < 3; i++) {
       const select = document.querySelector('.insumo-selector[data-index="' + i + '"]');
-      const precio = n(select?.selectedOptions[0]?.dataset?.precio);
+      const precioCatalogo = n(select?.selectedOptions[0]?.dataset?.precio);
+      const precioManual = n(document.querySelector('.precio-manual[data-index="' + i + '"]')?.value);
+      const precio = precioManual > 0 ? precioManual : precioCatalogo;
       const unidad = select?.selectedOptions[0]?.dataset?.unidad || 'unidad';
-      const manual = n(document.querySelector('.cantidad-manual[data-index="' + i + '"]')?.value);
+      let manual = n(document.querySelector('.cantidad-manual[data-index="' + i + '"]')?.value);
+      const unidad = (document.querySelector('.unidad[data-index="' + i + '"]')?.value || 'm');
+      const sepFleje = n(document.querySelector('.separacion-fleje[data-index="' + i + '"]')?.value);
       const merma = n(document.querySelector('.merma[data-index="' + i + '"]')?.value);
       const rendimiento = Math.max(0.0001, n(document.querySelector('.rendimiento[data-index="' + i + '"]')?.value || 1));
-      const area = piezasArea(i);
-      const base = manual > 0 ? manual : area;
+      let area = piezasArea(i);
+      if (unidad === 'cm') { area = area / 10000; manual = manual / 100; }
+      let base = manual > 0 ? manual : area;
+      const categoria = (select?.selectedOptions[0]?.textContent || '').toLowerCase();
+      if (categoria.includes('fleje') && sepFleje > 0 && manual <= 0) { base = area / sepFleje; }
       const finalCant = (base * (1 + merma / 100)) / rendimiento;
       const subtotal = finalCant * precio;
       if (base > 0 && precio >= 0) materiales += subtotal;
 
       const parcial = document.getElementById('parcial_' + i);
       if (parcial) {
-        parcial.textContent = 'Estimación parcial: base ' + base.toFixed(2) + ' ' + unidad + ' (' + (manual > 0 ? 'manual' : 'piezas') + '), total ' + finalCant.toFixed(2) + ' ' + unidad + ', costo ' + money(subtotal);
+        parcial.textContent = 'Estimación parcial: base ' + base.toFixed(2) + ' m (' + (manual > 0 ? 'manual' : 'piezas') + '), merma ' + merma.toFixed(2) + '%, rendimiento ' + rendimiento.toFixed(2) + ', precio ' + money(precio) + ', costo ' + money(subtotal);
       }
     }
 
