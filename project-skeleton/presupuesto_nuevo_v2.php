@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $alto = (float) ($_POST['item_alto_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
                 $ancho = (float) ($_POST['item_ancho_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
                 $cantidadPieza = (int) ($_POST['item_cant_pieza_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
+                $rotable = isset($_POST['item_rotable_' . $i . '_' . $modulo . '_' . $pieza]);
                 if ($alto <= 0 || $ancho <= 0 || $cantidadPieza <= 0) {
                     continue;
                 }
@@ -77,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'ancho' => $ancho,
                     'cantidad' => $cantidadPieza,
                     'area_total' => round(($alto * $ancho * $cantidadPieza), 4),
+                    'rotable' => $rotable,
                 ];
             }
 
@@ -258,7 +260,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <div class="card" style="margin-top:8px; padding:8px;">
           <label style="display:block; margin-bottom:6px;"><input type="checkbox" name="item_modulo_<?= $i ?>_<?= h($modulo) ?>"> <?= h(ucwords(str_replace('_', ' ', $modulo))) ?></label>
           <table class="table">
-            <thead><tr><th>Usar</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th></tr></thead>
+            <thead><tr><th>Usar</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Rotable</th></tr></thead>
             <tbody>
             <?php foreach ($piezas as $pieza): ?>
               <tr>
@@ -267,6 +269,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
                 <td><input type="number" step="0.01" min="0" name="item_alto_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>"></td>
                 <td><input type="number" step="0.01" min="0" name="item_ancho_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>"></td>
                 <td><input type="number" step="1" min="0" name="item_cant_pieza_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>"></td>
+                              <td><input type="checkbox" name="item_rotable_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" checked></td>
               </tr>
             <?php endforeach; ?>
             </tbody>
@@ -280,6 +283,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       <button type="button" class="secondary-btn btn-editar" data-index="<?= $i ?>" disabled>Modificar</button>
     </div>
     <p class="muted parcial-insumo" id="parcial_<?= $i ?>">Estado: pendiente de confirmación.</p>
+    <p class="flash" id="alerta_<?= $i ?>" style="display:none;"></p>
   </fieldset>
   <?php endfor; ?>
 
@@ -354,6 +358,25 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       const categoria = (select?.selectedOptions[0]?.textContent || '').toLowerCase();
       if (categoria.includes('fleje') && sepFleje > 0 && manual <= 0) { base = area / sepFleje; }
       const finalCant = (base * (1 + merma / 100)) / rendimiento;
+      
+      const anchoTela = n(document.querySelector('.ancho-tela[data-index="' + i + '"]')?.value);
+      const warning = [];
+      document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el) {
+        if (!el.name || !el.name.includes('item_ancho_')) return;
+        const suf = el.name.replace('item_ancho_', '');
+        const anchoP = n(el.value);
+        const altoP = n(document.querySelector('[name="item_alto_' + suf + '"]')?.value);
+        const usada = !!document.querySelector('[name="item_pieza_' + suf + '"]')?.checked;
+        const rotable = !!document.querySelector('[name="item_rotable_' + suf + '"]')?.checked;
+        if (!usada || anchoTela <= 0) return;
+        let aw = anchoP;
+        let ah = altoP;
+        if (unidad === 'cm') { aw = aw / 100; ah = ah / 100; }
+        if (aw > anchoTela && (!rotable || ah > anchoTela)) {
+          warning.push('Pieza ' + suf.split('_').slice(-1)[0] + ' supera ancho útil (' + aw.toFixed(2) + 'm > ' + anchoTela.toFixed(2) + 'm). Sugerencia: dividir en paños.');
+        }
+      });
+
       const subtotal = finalCant * precio;
       if (base > 0 && precio >= 0) materiales += subtotal;
 
@@ -361,6 +384,11 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       if (parcial) {
         const confirmado = document.querySelector('.confirmado-input[data-index="' + i + '"]')?.value === '1';
         parcial.textContent = (confirmado ? '[Confirmado] ' : '[Pendiente] ') + 'Estimación parcial: base ' + base.toFixed(2) + ' m (' + (manual > 0 ? 'manual' : 'piezas') + '), merma ' + merma.toFixed(2) + '%, rendimiento ' + rendimiento.toFixed(2) + ', precio ' + money(precio) + ', costo ' + money(subtotal);
+      }
+      const alerta = document.getElementById('alerta_' + i);
+      if (alerta) {
+        if (warning.length > 0) { alerta.style.display = 'block'; alerta.textContent = warning.join(' | '); }
+        else { alerta.style.display = 'none'; alerta.textContent = ''; }
       }
     }
 
