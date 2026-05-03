@@ -37,6 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $itemAnchosTela = $_POST['item_ancho_tela'] ?? [];
     $itemPreciosManual = $_POST['item_precio_manual'] ?? [];
     $itemSeparacionFleje = $_POST['item_separacion_fleje'] ?? [];
+    $itemLargoPlaca = $_POST['item_largo_placa'] ?? [];
+    $itemAnchoPlaca = $_POST['item_ancho_placa'] ?? [];
+    $itemEspesor = $_POST['item_espesor'] ?? [];
     $itemConfirmados = $_POST['item_confirmado'] ?? [];
 
     $estructura = [];
@@ -113,6 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $anchoTela = (float) ($itemAnchosTela[$i] ?? 0);
         $precioManual = (float) ($itemPreciosManual[$i] ?? 0);
         $separacionFleje = (float) ($itemSeparacionFleje[$i] ?? 0);
+        $largoPlaca = (float) ($itemLargoPlaca[$i] ?? 0);
+        $anchoPlaca = (float) ($itemAnchoPlaca[$i] ?? 0);
+        $espesor = (float) ($itemEspesor[$i] ?? 0);
 
         $areaPiezas = 0.0;
         foreach ($modulosAplicados as $moduloData) {
@@ -129,6 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
         if ((string) ($insumosById[$insumoId]['categoria'] ?? '') === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
             $cantidadBase = $areaPiezas / $separacionFleje;
+        }
+        if ($tipoInsumo === 'gomaespuma' && $largoPlaca > 0 && $anchoPlaca > 0 && $cantidadManual <= 0) {
+            $placaArea = $largoPlaca * $anchoPlaca;
+            $cantidadBase = (float) ceil($areaPiezas / $placaArea);
         }
         $merma = (float) ($itemMermas[$i] ?? 0);
         $rendimiento = max(0.0001, (float) ($itemRendimientos[$i] ?? 1));
@@ -152,6 +162,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'unidad_carga' => $unidad,
                 'ancho_tela' => $anchoTela,
                 'separacion_fleje' => $separacionFleje,
+                'largo_placa' => $largoPlaca,
+                'ancho_placa' => $anchoPlaca,
+                'espesor' => $espesor,
                 'cantidad_base' => round($cantidadBase, 4),
                 'base_origen' => $cantidadManual > 0 ? 'manual' : 'piezas',
                 'merma_pct' => $merma,
@@ -284,6 +297,17 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       <label data-tipo-field="fleje">Separación fleje (m)
         <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="0" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
       </label>
+
+      <label data-tipo-field="gomaespuma">Largo placa (m)
+        <input type="number" name="item_largo_placa[]" step="0.01" min="0" value="2.00" class="largo-placa" data-index="<?= $i ?>">
+      </label>
+      <label data-tipo-field="gomaespuma">Ancho placa (m)
+        <input type="number" name="item_ancho_placa[]" step="0.01" min="0" value="1.00" class="ancho-placa" data-index="<?= $i ?>">
+      </label>
+      <label data-tipo-field="gomaespuma">Espesor (mm)
+        <input type="number" name="item_espesor[]" step="1" min="0" value="30" class="espesor" data-index="<?= $i ?>">
+      </label>
+
     </div>
 
     <details style="margin-top:8px;">
@@ -413,7 +437,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     const ayuda = document.getElementById('tipo_ayuda_' + index);
     if (ayuda) {
       if (tipo === 'tela') ayuda.textContent = 'Tela: usar ancho útil y validar piezas rotable/no rotable.';
-      else if (tipo === 'gomaespuma') ayuda.textContent = 'Gomaespuma: usar ancho/largo de placa y espesor (próxima etapa).';
+      else if (tipo === 'gomaespuma') ayuda.textContent = 'Gomaespuma: cargar largo/ancho de placa y espesor para estimar cantidad de placas.';
       else if (tipo === 'fleje') ayuda.textContent = 'Fleje: cargar separación para estimar tiras por módulo.';
       else if (tipo === '') ayuda.textContent = 'Elegí capa y tipo para ver campos recomendados.';
       else ayuda.textContent = 'Completá campos del tipo seleccionado y confirmá el bloque.';
@@ -447,6 +471,9 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       let base = manual > 0 ? manual : area;
       const categoria = (select?.selectedOptions[0]?.textContent || '').toLowerCase();
       if (categoria.includes('fleje') && sepFleje > 0 && manual <= 0) { base = area / sepFleje; }
+      const largoPlaca = n(document.querySelector('.largo-placa[data-index="' + i + '"]')?.value);
+      const anchoPlaca = n(document.querySelector('.ancho-placa[data-index="' + i + '"]')?.value);
+      if (tipo === 'gomaespuma' && largoPlaca > 0 && anchoPlaca > 0 && manual <= 0) { base = Math.ceil(area / (largoPlaca * anchoPlaca)); }
       const finalCant = (base * (1 + merma / 100)) / rendimiento;
       
       const anchoTela = n(document.querySelector('.ancho-tela[data-index="' + i + '"]')?.value);
