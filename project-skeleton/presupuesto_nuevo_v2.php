@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $itemCapas = $_POST['item_capa'] ?? [];
+    $itemTiposInsumo = $_POST['item_tipo_insumo'] ?? [];
     $itemInsumos = $_POST['item_insumo_id'] ?? [];
     $itemMermas = $_POST['item_merma'] ?? [];
     $itemRendimientos = $_POST['item_rendimiento'] ?? [];
@@ -52,8 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $capa = trim((string) $capaRaw);
+        $tipoInsumo = trim((string) ($itemTiposInsumo[$i] ?? ''));
         $insumoId = (int) ($itemInsumos[$i] ?? 0);
-        if ($capa === '' || $insumoId <= 0 || !isset($insumosById[$insumoId])) {
+        if ($capa === '' || $tipoInsumo === '' || $insumoId <= 0 || !isset($insumosById[$insumoId])) {
+            continue;
+        }
+        $permitidos = (array) (($configCapas['capas'][$capa]['tipos_insumo_permitidos'] ?? []));
+        if (!in_array($tipoInsumo, $permitidos, true)) {
             continue;
         }
 
@@ -133,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $materiales += $subtotal;
         $estructura[] = [
             'capa' => $capa,
+            'tipo_insumo' => $tipoInsumo,
             'insumo' => [
                 'id' => $insumoId,
                 'nombre' => (string) ($insumosById[$insumoId]['nombre'] ?? 'Insumo'),
@@ -230,18 +237,24 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     <legend>Insumo <?= $i + 1 ?></legend>
     <div class="form-grid">
       <label>Capa
-        <select name="item_capa[]">
+        <select name="item_capa[]" class="capa-select" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
-          <?php foreach ($capas as $capa): ?>
-            <option value="<?= h($capa) ?>"><?= h(ucfirst($capa)) ?></option>
+          <?php foreach (array_keys((array) ($configCapas['capas'] ?? [])) as $capa): ?>
+            <option value="<?= h((string) $capa) ?>"><?= h(ucwords(str_replace('_', ' ', (string) $capa))) ?></option>
           <?php endforeach; ?>
+        </select>
+      </label>
+
+      <label>Tipo de insumo
+        <select name="item_tipo_insumo[]" class="tipo-insumo" data-index="<?= $i ?>">
+          <option value="">Seleccionar...</option>
         </select>
       </label>
       <label>Insumo
         <select name="item_insumo_id[]" class="insumo-selector" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
           <?php foreach ($insumos as $insumo): ?>
-            <option value="<?= (int) $insumo['id'] ?>" data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+            <option value="<?= (int) $insumo['id'] ?>" data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
           <?php endforeach; ?>
         </select>
       </label>
@@ -360,6 +373,32 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   }
 
 
+
+  function fillTiposByCapa(index) {
+    const capaSel = document.querySelector('.capa-select[data-index="' + index + '"]');
+    const tipoSel = document.querySelector('.tipo-insumo[data-index="' + index + '"]');
+    if (!capaSel || !tipoSel) return;
+    const capa = capaSel.value;
+    const tipos = (configCapas.capas && configCapas.capas[capa] && configCapas.capas[capa].tipos_insumo_permitidos) ? configCapas.capas[capa].tipos_insumo_permitidos : [];
+    tipoSel.innerHTML = '<option value="">Seleccionar...</option>';
+    tipos.forEach(function(t){
+      const op=document.createElement('option');
+      op.value=t; op.textContent=t.replaceAll('_',' ');
+      tipoSel.appendChild(op);
+    });
+  }
+
+  function filterInsumos(index) {
+    const tipo = document.querySelector('.tipo-insumo[data-index="' + index + '"]')?.value || '';
+    const insSel = document.querySelector('.insumo-selector[data-index="' + index + '"]');
+    if (!insSel) return;
+    insSel.querySelectorAll('option').forEach(function(op){
+      if (!op.value) return;
+      op.hidden = tipo !== '' && op.dataset.categoria !== tipo;
+    });
+    if (insSel.selectedOptions[0] && insSel.selectedOptions[0].hidden) insSel.value = '';
+  }
+
   function applyMuebleDefaults() {
     const tipo = document.getElementById('mueble_tipo_v2')?.value || 'personalizado';
     const defaults = (configCapas.muebles && configCapas.muebles[tipo] && configCapas.muebles[tipo].modulos_default) ? configCapas.muebles[tipo].modulos_default : [];
@@ -435,6 +474,9 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   document.querySelectorAll('.btn-confirmar').forEach(function(btn){ btn.addEventListener('click', function(){ confirmar(btn.dataset.index); }); });
   document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
   document.getElementById('mueble_tipo_v2')?.addEventListener('change', function(){ applyMuebleDefaults(); recalc(); });
+  document.querySelectorAll('.capa-select').forEach(function(sel){ sel.addEventListener('change', function(){ fillTiposByCapa(sel.dataset.index); filterInsumos(sel.dataset.index); recalc(); }); });
+  document.querySelectorAll('.tipo-insumo').forEach(function(sel){ sel.addEventListener('change', function(){ filterInsumos(sel.dataset.index); recalc(); }); });
+  for (let i=0;i<3;i++){ fillTiposByCapa(i); filterInsumos(i); }
   applyMuebleDefaults();
   recalc();
 })();
