@@ -6,6 +6,7 @@ require_once __DIR__ . '/includes/bootstrap.php';
 $clientes = read_json(data_file('clientes'));
 $insumos = read_json(data_file('insumos'));
 $presupuestos = read_json(data_file('presupuestos'));
+$configCapas = read_json(data_file('config_capas_insumos'));
 
 $capas = ['estructura', 'confort', 'terminacion', 'proteccion'];
 $modulos = ['asiento', 'respaldo', 'brazo_izq', 'brazo_der', 'base'];
@@ -16,9 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
     $margen = (float) ($_POST['margen'] ?? 30);
+    $muebleTipo = trim((string) ($_POST['mueble_tipo'] ?? 'personalizado'));
 
     if ($clienteId <= 0) {
         redirect_with_message('presupuesto_nuevo_v2.php', 'Debe seleccionar un cliente.');
+    }
+
+    if ($muebleTipo === '') {
+        $muebleTipo = 'personalizado';
     }
 
     $itemCapas = $_POST['item_capa'] ?? [];
@@ -162,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'id' => next_id($presupuestos),
         'cliente_id' => $clienteId,
         'detalle' => $detalle,
+        'mueble_tipo' => $muebleTipo,
         'mano_obra' => round($manoObra, 2),
         'materiales' => round($materiales, 2),
         'margen' => round($margen, 2),
@@ -171,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'fecha' => date('Y-m-d'),
         'estructura_insumos_v2' => $estructura,
         'version_flujo' => 'capa_insumo_modulos_piezas',
+        'config_capas_version' => (string) ($configCapas['version'] ?? 'manual'),
     ];
 
     write_json(data_file('presupuestos'), $presupuestos);
@@ -192,6 +200,16 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
   <label>Detalle
     <input type="text" name="detalle" placeholder="Ej: Prueba flujo por insumo">
+  </label>
+
+
+
+  <label>Tipo de mueble
+    <select name="mueble_tipo" id="mueble_tipo_v2">
+      <?php foreach (array_keys((array) ($configCapas['muebles'] ?? [])) as $muebleKey): ?>
+        <option value="<?= h((string) $muebleKey) ?>"><?= h(ucwords(str_replace('_', ' ', (string) $muebleKey))) ?></option>
+      <?php endforeach; ?>
+    </select>
   </label>
 
   <label>Mano de obra
@@ -258,7 +276,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       <summary>Confirmar módulos y piezas (con medidas)</summary>
       <?php foreach ($modulos as $modulo): ?>
         <div class="card" style="margin-top:8px; padding:8px;">
-          <label style="display:block; margin-bottom:6px;"><input type="checkbox" name="item_modulo_<?= $i ?>_<?= h($modulo) ?>"> <?= h(ucwords(str_replace('_', ' ', $modulo))) ?></label>
+          <label style="display:block; margin-bottom:6px;"><input type="checkbox" name="item_modulo_<?= $i ?>_<?= h($modulo) ?>" data-modulo="<?= h($modulo) ?>" data-index="<?= $i ?>"> <?= h(ucwords(str_replace('_', ' ', $modulo))) ?></label>
           <table class="table">
             <thead><tr><th>Usar</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Rotable</th></tr></thead>
             <tbody>
@@ -292,6 +310,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
 <script>
 (function () {
+  const configCapas = <?= json_encode($configCapas, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
   function n(v) { return Number(v || 0); }
   function money(v) { return '$' + v.toFixed(2); }
 
@@ -338,6 +357,17 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     const parcial = document.getElementById('parcial_' + index);
     if (parcial) parcial.textContent = 'Estado: en edición. Presioná Confirmar insumo para incluirlo en JSON.';
     recalc();
+  }
+
+
+  function applyMuebleDefaults() {
+    const tipo = document.getElementById('mueble_tipo_v2')?.value || 'personalizado';
+    const defaults = (configCapas.muebles && configCapas.muebles[tipo] && configCapas.muebles[tipo].modulos_default) ? configCapas.muebles[tipo].modulos_default : [];
+    for (let i = 0; i < 3; i++) {
+      document.querySelectorAll('input[data-index="' + i + '"][data-modulo]').forEach(function(chk){
+        chk.checked = defaults.includes(chk.dataset.modulo);
+      });
+    }
   }
 
   function recalc() {
@@ -404,6 +434,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   document.getElementById('v2-form')?.addEventListener('input', recalc);
   document.querySelectorAll('.btn-confirmar').forEach(function(btn){ btn.addEventListener('click', function(){ confirmar(btn.dataset.index); }); });
   document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
+  document.getElementById('mueble_tipo_v2')?.addEventListener('change', function(){ applyMuebleDefaults(); recalc(); });
+  applyMuebleDefaults();
   recalc();
 })();
 </script>
