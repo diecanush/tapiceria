@@ -250,6 +250,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
           <option value="">Seleccionar...</option>
         </select>
       </label>
+      <small class="muted tipo-ayuda" id="tipo_ayuda_<?= $i ?>">Elegí capa y tipo para ver campos recomendados.</small>
       <label>Insumo
         <select name="item_insumo_id[]" class="insumo-selector" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
@@ -258,29 +259,29 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
           <?php endforeach; ?>
         </select>
       </label>
-      <label>Cantidad final manual (opcional)
+      <label data-tipo-field="all">Cantidad final manual (opcional)
         <input type="number" name="item_cantidad[]" step="0.01" min="0" value="0" class="cantidad-manual" data-index="<?= $i ?>">
       </label>
-      <label>Merma %
+      <label data-tipo-field="all">Merma %
         <input type="number" name="item_merma[]" step="0.01" min="0" value="10" class="merma" data-index="<?= $i ?>">
       </label>
-      <label>Rendimiento (ej: 0.90 = 10% pérdida adicional)
+      <label data-tipo-field="all">Rendimiento (ej: 0.90 = 10% pérdida adicional)
         <input type="number" name="item_rendimiento[]" step="0.01" min="0.01" value="1" class="rendimiento" data-index="<?= $i ?>">
       </label>
 
-      <label>Unidad de carga
+      <label data-tipo-field="all">Unidad de carga
         <select name="item_unidad[]" class="unidad" data-index="<?= $i ?>">
           <option value="m">Metros</option>
           <option value="cm">Centímetros</option>
         </select>
       </label>
-      <label>Ancho útil tela/placa (m)
+      <label data-tipo-field="tela gomaespuma guata fliselina">Ancho útil tela/placa (m)
         <input type="number" name="item_ancho_tela[]" step="0.01" min="0" value="1.40" class="ancho-tela" data-index="<?= $i ?>">
       </label>
       <label>Precio unitario (opcional)
         <input type="number" name="item_precio_manual[]" step="0.01" min="0" value="0" class="precio-manual" data-index="<?= $i ?>" placeholder="Si va vacío usa catálogo">
       </label>
-      <label>Separación fleje (m)
+      <label data-tipo-field="fleje">Separación fleje (m)
         <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="0" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
       </label>
     </div>
@@ -399,6 +400,26 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     if (insSel.selectedOptions[0] && insSel.selectedOptions[0].hidden) insSel.value = '';
   }
 
+
+  function adaptCamposPorTipo(index) {
+    const tipo = document.querySelector('.tipo-insumo[data-index="' + index + '"]')?.value || '';
+    const scope = document.querySelector('[data-insumo-block="' + index + '"]');
+    if (!scope) return;
+    scope.querySelectorAll('[data-tipo-field]').forEach(function(label){
+      const rule = label.getAttribute('data-tipo-field') || 'all';
+      const show = rule === 'all' || rule.split(' ').includes(tipo);
+      label.style.display = show ? '' : 'none';
+    });
+    const ayuda = document.getElementById('tipo_ayuda_' + index);
+    if (ayuda) {
+      if (tipo === 'tela') ayuda.textContent = 'Tela: usar ancho útil y validar piezas rotable/no rotable.';
+      else if (tipo === 'gomaespuma') ayuda.textContent = 'Gomaespuma: usar ancho/largo de placa y espesor (próxima etapa).';
+      else if (tipo === 'fleje') ayuda.textContent = 'Fleje: cargar separación para estimar tiras por módulo.';
+      else if (tipo === '') ayuda.textContent = 'Elegí capa y tipo para ver campos recomendados.';
+      else ayuda.textContent = 'Completá campos del tipo seleccionado y confirmá el bloque.';
+    }
+  }
+
   function applyMuebleDefaults() {
     const tipo = document.getElementById('mueble_tipo_v2')?.value || 'personalizado';
     const defaults = (configCapas.muebles && configCapas.muebles[tipo] && configCapas.muebles[tipo].modulos_default) ? configCapas.muebles[tipo].modulos_default : [];
@@ -475,8 +496,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
   document.getElementById('mueble_tipo_v2')?.addEventListener('change', function(){ applyMuebleDefaults(); recalc(); });
   document.querySelectorAll('.capa-select').forEach(function(sel){ sel.addEventListener('change', function(){ fillTiposByCapa(sel.dataset.index); filterInsumos(sel.dataset.index); recalc(); }); });
-  document.querySelectorAll('.tipo-insumo').forEach(function(sel){ sel.addEventListener('change', function(){ filterInsumos(sel.dataset.index); recalc(); }); });
-  for (let i=0;i<3;i++){ fillTiposByCapa(i); filterInsumos(i); }
+  document.querySelectorAll('.tipo-insumo').forEach(function(sel){ sel.addEventListener('change', function(){ filterInsumos(sel.dataset.index); adaptCamposPorTipo(sel.dataset.index); recalc(); }); });
+  for (let i=0;i<3;i++){ fillTiposByCapa(i); filterInsumos(i); adaptCamposPorTipo(i); }
   applyMuebleDefaults();
   recalc();
 })();
