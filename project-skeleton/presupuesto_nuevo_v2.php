@@ -256,6 +256,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subtotal = $manoObra + $materiales;
     $total = $subtotal * (1 + ($margen / 100));
 
+    $actor = (string) ($_SERVER['REMOTE_ADDR'] ?? 'local');
+
     $presupuestos[] = [
         'id' => next_id($presupuestos),
         'cliente_id' => $clienteId,
@@ -271,6 +273,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'estructura_insumos_v2' => $estructura,
         'version_flujo' => 'capa_insumo_modulos_piezas',
         'config_capas_version' => (string) ($configCapas['version'] ?? 'manual'),
+        'config_capas_snapshot' => $configCapas,
+        'audit' => [
+            'created_at' => date('c'),
+            'created_by' => $actor,
+            'flow' => 'presupuesto_v2',
+        ],
     ];
 
     write_json(data_file('presupuestos'), $presupuestos);
@@ -280,6 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 render_page_start('Presupuesto nuevo (V2 por insumo)');
 ?>
 <p class="muted">Cargá medidas en cm o m. Merma = % extra por desperdicio. Rendimiento = eficiencia del uso (1 = normal). Si elegís fleje, podés indicar separación para estimar tiras.</p>
+<p class="muted"><strong>Config activa:</strong> versión <?= h((string) ($configCapas['version'] ?? 'manual')) ?> (snapshot se guarda en cada presupuesto V2).</p>
 <form method="post" class="form-grid" id="v2-form">
   <label>Cliente
     <select name="cliente_id" required>
