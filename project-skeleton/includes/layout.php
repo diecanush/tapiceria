@@ -21,6 +21,7 @@ function render_page_start(string $title): void
     echo '<a href="insumos.php">Insumos</a>';
     echo '<a href="presupuesto_nuevo.php">Presupuestos</a>';
     echo '<a href="presupuesto_nuevo_v2.php">Presupuestos V2</a>';
+    echo '<a href="config_capas_insumos.php">Config capas</a>';
     echo '<a href="agenda.php">Agenda</a>';
     echo '</nav>';
     echo '</header>';
