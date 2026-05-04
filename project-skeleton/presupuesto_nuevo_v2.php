@@ -56,6 +56,33 @@ function estimate_tela_base(array $modulosAplicados, float $anchoTela, string $u
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $action = (string) ($_POST['action'] ?? 'create');
+    if ($action === 'duplicate_v2') {
+        $id = (int) ($_POST['id'] ?? 0);
+        foreach ($presupuestos as $presupuestoExistente) {
+            if ((int) ($presupuestoExistente['id'] ?? 0) !== $id) {
+                continue;
+            }
+            if ((string) ($presupuestoExistente['version_flujo'] ?? '') !== 'capa_insumo_modulos_piezas') {
+                continue;
+            }
+            $nuevo = $presupuestoExistente;
+            $nuevo['id'] = next_id($presupuestos);
+            $nuevo['fecha'] = date('Y-m-d');
+            $nuevo['estado'] = 'borrador';
+            $nuevo['audit'] = [
+                'created_at' => date('c'),
+                'created_by' => (string) ($_SERVER['REMOTE_ADDR'] ?? 'local'),
+                'flow' => 'presupuesto_v2_duplicate',
+            ];
+            $presupuestos[] = $nuevo;
+            write_json(data_file('presupuestos'), $presupuestos);
+            redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto V2 duplicado como borrador.');
+        }
+        redirect_with_message('presupuesto_nuevo_v2.php', 'No se encontró el presupuesto V2 para duplicar.');
+    }
+
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
@@ -285,9 +312,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto v2 creado correctamente.');
 }
 
+$presupuestosV2 = array_values(array_filter($presupuestos, static function (array $p): bool {
+    return (string) ($p['version_flujo'] ?? '') === 'capa_insumo_modulos_piezas';
+}));
+
 render_page_start('Presupuesto nuevo (V2 por insumo)');
 ?>
 <p class="muted">Cargá medidas en cm o m. Merma = % extra por desperdicio. Rendimiento = eficiencia del uso (1 = normal). Si elegís fleje, podés indicar separación para estimar tiras.</p>
+
+<section class="card" style="margin-bottom:12px;">
+  <h3 style="margin-top:0;">Historial Presupuestos V2</h3>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Fecha</th><th>Detalle</th><th>Total</th><th>Acción</th></tr></thead>
+    <tbody>
+      <?php foreach (array_slice(array_reverse($presupuestosV2), 0, 10) as $pv2): ?>
+      <tr>
+        <td>#<?= (int) ($pv2['id'] ?? 0) ?></td>
+        <td><?= h((string) ($pv2['fecha'] ?? '')) ?></td>
+        <td><?= h((string) ($pv2['detalle'] ?? '')) ?></td>
+        <td><?= money((float) ($pv2['total'] ?? 0)) ?></td>
+        <td>
+          <form method="post" style="display:inline;">
+            <input type="hidden" name="id" value="<?= (int) ($pv2['id'] ?? 0) ?>">
+            <button type="submit" name="action" value="duplicate_v2" class="secondary-btn">Duplicar</button>
+          </form>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+    </tbody>
+  </table>
+</section>
+
 <p class="muted"><strong>Config activa:</strong> versión <?= h((string) ($configCapas['version'] ?? 'manual')) ?> (snapshot se guarda en cada presupuesto V2).</p>
 <form method="post" class="form-grid" id="v2-form">
   <label>Cliente
