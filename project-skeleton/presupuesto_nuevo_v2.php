@@ -12,6 +12,49 @@ $capas = ['estructura', 'confort', 'terminacion', 'proteccion'];
 $modulos = ['asiento', 'respaldo', 'brazo_izq', 'brazo_der', 'base'];
 $piezas = ['frente', 'lateral', 'superior', 'inferior', 'trasera'];
 
+
+function estimate_tela_base(array $modulosAplicados, float $anchoTela, string $unidad): float
+{
+    if ($anchoTela <= 0) {
+        return 0.0;
+    }
+
+    $metrosLineales = 0.0;
+    foreach ($modulosAplicados as $moduloData) {
+        foreach ((array) ($moduloData['piezas'] ?? []) as $piezaData) {
+            $alto = (float) ($piezaData['alto'] ?? 0);
+            $ancho = (float) ($piezaData['ancho'] ?? 0);
+            $cantidad = (int) ($piezaData['cantidad'] ?? 0);
+            $rotable = (bool) ($piezaData['rotable'] ?? false);
+            if ($alto <= 0 || $ancho <= 0 || $cantidad <= 0) {
+                continue;
+            }
+
+            if ($unidad === 'cm') {
+                $alto /= 100;
+                $ancho /= 100;
+            }
+
+            $piezaAncho = $ancho;
+            $piezaLargo = $alto;
+            if ($rotable && $alto <= $anchoTela && $ancho > $anchoTela) {
+                $piezaAncho = $alto;
+                $piezaLargo = $ancho;
+            }
+
+            if ($piezaAncho > $anchoTela) {
+                continue;
+            }
+
+            $porFila = max(1, (int) floor($anchoTela / $piezaAncho));
+            $filas = (int) ceil($cantidad / $porFila);
+            $metrosLineales += $filas * $piezaLargo;
+        }
+    }
+
+    return $metrosLineales;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
@@ -156,6 +199,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
                 $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
+        if ($tipoInsumo === 'tela' && $cantidadManual <= 0) {
+            $telaBase = estimate_tela_base($modulosAplicados, $anchoTela, $unidad);
+            if ($telaBase > 0) {
+                $cantidadBase = $telaBase;
+            }
+        }
         if ((string) ($insumosById[$insumoId]['categoria'] ?? '') === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
             $cantidadBase = $areaPiezas / $separacionFleje;
         }
@@ -482,6 +531,35 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     }
   }
 
+
+  function estimateTelaBase(index, anchoTela, unidad) {
+    if (anchoTela <= 0) return 0;
+    let total = 0;
+    document.querySelectorAll('[data-index="' + index + '"]').forEach(function(el) {
+      if (!el.name || !el.name.includes('item_ancho_')) return;
+      const suf = el.name.replace('item_ancho_', '');
+      const usada = !!document.querySelector('[name="item_pieza_' + suf + '"]')?.checked;
+      if (!usada) return;
+      const rotable = !!document.querySelector('[name="item_rotable_' + suf + '"]')?.checked;
+      let alto = n(document.querySelector('[name="item_alto_' + suf + '"]')?.value);
+      let ancho = n(el.value);
+      const cantidad = n(document.querySelector('[name="item_cant_pieza_' + suf + '"]')?.value);
+      if (unidad === 'cm') { alto/=100; ancho/=100; }
+      if (alto <= 0 || ancho <= 0 || cantidad <= 0) return;
+      let piezaAncho = ancho;
+      let piezaLargo = alto;
+      if (rotable && alto <= anchoTela && ancho > anchoTela) {
+        piezaAncho = alto;
+        piezaLargo = ancho;
+      }
+      if (piezaAncho > anchoTela) return;
+      const porFila = Math.max(1, Math.floor(anchoTela / piezaAncho));
+      const filas = Math.ceil(cantidad / porFila);
+      total += filas * piezaLargo;
+    });
+    return total;
+  }
+
   function recalc() {
     let materiales = 0;
     for (let i = 0; i < 3; i++) {
@@ -502,9 +580,13 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       const largoPlaca = n(document.querySelector('.largo-placa[data-index="' + i + '"]')?.value);
       const anchoPlaca = n(document.querySelector('.ancho-placa[data-index="' + i + '"]')?.value);
       if (tipo === 'gomaespuma' && largoPlaca > 0 && anchoPlaca > 0 && manual <= 0) { base = Math.ceil(area / (largoPlaca * anchoPlaca)); }
+      const anchoTela = n(document.querySelector('.ancho-tela[data-index="' + i + '"]')?.value);
+      if (tipo === 'tela' && manual <= 0) {
+        const telaBase = estimateTelaBase(i, anchoTela, unidad);
+        if (telaBase > 0) base = telaBase;
+      }
       const finalCant = (base * (1 + merma / 100)) / rendimiento;
       
-      const anchoTela = n(document.querySelector('.ancho-tela[data-index="' + i + '"]')?.value);
       const warning = [];
       document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el) {
         if (!el.name || !el.name.includes('item_ancho_')) return;
