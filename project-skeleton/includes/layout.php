@@ -20,6 +20,8 @@ function render_page_start(string $title): void
     echo '<a href="clientes.php">Clientes</a>';
     echo '<a href="insumos.php">Insumos</a>';
     echo '<a href="presupuesto_nuevo.php">Presupuestos</a>';
+    echo '<a href="presupuesto_nuevo_v2.php">Presupuestos V2</a>';
+    echo '<a href="config_capas_insumos.php">Config capas</a>';
     echo '<a href="agenda.php">Agenda</a>';
     echo '</nav>';
     echo '</header>';
@@ -35,9 +37,4 @@ function render_page_start(string $title): void
 function render_page_end(): void
 {
     echo '</main></body></html>';
-function render_header(string $title): void
-    
-{
-    echo "<h1>{$title}</h1>";
-}
 }
