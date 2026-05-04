@@ -313,7 +313,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $presupuestosV2 = array_values(array_filter($presupuestos, static function (array $p): bool {
-    return (string) ($p['version_flujo'] ?? '') === 'capa_insumo_modulos_piezas';
+    if ((string) ($p['version_flujo'] ?? '') === 'capa_insumo_modulos_piezas') {
+        return true;
+    }
+
+    return isset($p['estructura_insumos_v2']) && is_array($p['estructura_insumos_v2']) && $p['estructura_insumos_v2'] !== [];
 }));
 
 render_page_start('Presupuesto nuevo (V2 por insumo)');
@@ -325,7 +329,11 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   <table class="table">
     <thead><tr><th>ID</th><th>Fecha</th><th>Detalle</th><th>Total</th><th>Acción</th></tr></thead>
     <tbody>
-      <?php foreach (array_slice(array_reverse($presupuestosV2), 0, 10) as $pv2): ?>
+      <?php $ultimosV2 = array_slice(array_reverse($presupuestosV2), 0, 10); ?>
+      <?php if ($ultimosV2 === []): ?>
+      <tr><td colspan="5" class="muted">Aún no hay presupuestos V2 guardados.</td></tr>
+      <?php endif; ?>
+      <?php foreach ($ultimosV2 as $pv2): ?>
       <tr>
         <td>#<?= (int) ($pv2['id'] ?? 0) ?></td>
         <td><?= h((string) ($pv2['fecha'] ?? '')) ?></td>
