@@ -625,6 +625,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       if (unidad === 'cm') { area = area / 10000; manual = manual / 100; }
       let base = manual > 0 ? manual : area;
       const categoria = (select?.selectedOptions[0]?.textContent || '').toLowerCase();
+      const tipo = document.querySelector('.tipo-insumo[data-index="' + i + '"]')?.value || '';
       if (categoria.includes('fleje') && sepFleje > 0 && manual <= 0) { base = area / sepFleje; }
       const largoPlaca = n(document.querySelector('.largo-placa[data-index="' + i + '"]')?.value);
       const anchoPlaca = n(document.querySelector('.ancho-placa[data-index="' + i + '"]')?.value);
