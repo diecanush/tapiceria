@@ -326,6 +326,11 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     <p class="muted" id="resumen_v2">Materiales: $0.00 | Total estimado: $0.00</p>
   </section>
 
+  <section class="card" style="grid-column:1 / -1;">
+    <h3 style="margin-top:0;">Vista técnica (árbol)</h3>
+    <div id="resumen_tecnico_v2" class="muted">Sin datos aún.</div>
+  </section>
+
   <?php for ($i = 0; $i < 3; $i++): ?>
   <fieldset style="grid-column:1 / -1;" data-insumo-block="<?= $i ?>">
     <legend>Insumo <?= $i + 1 ?></legend>
@@ -569,6 +574,41 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     return total;
   }
 
+
+  function renderResumenTecnico() {
+    const host = document.getElementById('resumen_tecnico_v2');
+    if (!host) return;
+    const bloques = [];
+    for (let i = 0; i < 3; i++) {
+      const capa = document.querySelector('.capa-select[data-index="' + i + '"]')?.value || '';
+      const tipo = document.querySelector('.tipo-insumo[data-index="' + i + '"]')?.value || '';
+      const insumo = document.querySelector('.insumo-selector[data-index="' + i + '"]')?.selectedOptions?.[0]?.textContent || '';
+      if (!capa || !tipo || !insumo || insumo === 'Seleccionar...') continue;
+      const modulos = [];
+      document.querySelectorAll('input[data-index="' + i + '"][data-modulo]').forEach(function(m){
+        if (!m.checked) return;
+        const modulo = m.dataset.modulo;
+        const piezas = [];
+        document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el){
+          if (!el.name || !el.name.startsWith('item_pieza_' + i + '_' + modulo + '_')) return;
+          if (!el.checked) return;
+          piezas.push(el.name.split('_').slice(-1)[0]);
+        });
+        modulos.push({modulo, piezas});
+      });
+      bloques.push({capa, tipo, insumo, modulos});
+    }
+    if (bloques.length === 0) {
+      host.innerHTML = 'Sin datos aún.';
+      return;
+    }
+    host.innerHTML = bloques.map(function(b, idx){
+      return '<details><summary><strong>Insumo ' + (idx+1) + '</strong>: ' + b.insumo + ' | Capa: ' + b.capa + ' | Tipo: ' + b.tipo + '</summary>' +
+        b.modulos.map(function(m){ return '<div style="margin-left:12px;">• ' + m.modulo + ': ' + (m.piezas.join(', ') || 'sin piezas') + '</div>'; }).join('') +
+        '</details>';
+    }).join('');
+  }
+
   function recalc() {
     let materiales = 0;
     for (let i = 0; i < 3; i++) {
@@ -635,6 +675,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     if (resumen) {
       resumen.textContent = 'Materiales: ' + money(materiales) + ' | Total estimado: ' + money(total);
     }
+    renderResumenTecnico();
   }
 
   document.getElementById('v2-form')?.addEventListener('input', recalc);
