@@ -744,6 +744,10 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
   document.getElementById('v2-form')?.addEventListener('input', recalc);
   document.getElementById('v2-form')?.addEventListener('submit', function(e){
+    document.querySelectorAll('#v2-form [disabled]').forEach(function(el){
+      if (el.classList.contains('btn-editar') || el.classList.contains('btn-confirmar')) return;
+      el.disabled = false;
+    });
     const alerts = Array.from(document.querySelectorAll('[id^=alerta_]')).filter(function(a){ return a.style.display !== 'none' && a.textContent.trim() !== ''; });
     if (alerts.length > 0) {
       e.preventDefault();
