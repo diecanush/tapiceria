@@ -83,6 +83,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect_with_message('presupuesto_nuevo_v2.php', 'No se encontró el presupuesto V2 para duplicar.');
     }
 
+
+    if ($action === 'delete_v2') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $presupuestos = array_values(array_filter($presupuestos, static function (array $p) use ($id): bool {
+            return (int) ($p['id'] ?? 0) !== $id;
+        }));
+        write_json(data_file('presupuestos'), $presupuestos);
+        redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto V2 eliminado.');
+    }
+
+    if ($action === 'update_v2') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $detalle = trim((string) ($_POST['detalle'] ?? ''));
+        $manoObra = (float) ($_POST['mano_obra'] ?? 0);
+        $margen = (float) ($_POST['margen'] ?? 30);
+        foreach ($presupuestos as &$p) {
+            if ((int) ($p['id'] ?? 0) !== $id) continue;
+            $p['detalle'] = $detalle;
+            $p['mano_obra'] = round($manoObra,2);
+            $p['margen'] = round($margen,2);
+            $materiales = (float) ($p['materiales'] ?? 0);
+            $p['total'] = round(($materiales + $manoObra) * (1 + ($margen/100)), 2);
+            break;
+        }
+        unset($p);
+        write_json(data_file('presupuestos'), $presupuestos);
+        redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto V2 actualizado.');
+    }
+
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
@@ -320,9 +349,42 @@ $presupuestosV2 = array_values(array_filter($presupuestos, static function (arra
     return isset($p['estructura_insumos_v2']) && is_array($p['estructura_insumos_v2']) && $p['estructura_insumos_v2'] !== [];
 }));
 
+$verV2 = (int) ($_GET['ver_v2'] ?? 0);
+$editarV2 = (int) ($_GET['editar_v2'] ?? 0);
+$presupuestoEdit = null;
+foreach ($presupuestosV2 as $pv2tmp) {
+    if ((int) ($pv2tmp['id'] ?? 0) === $editarV2) { $presupuestoEdit = $pv2tmp; break; }
+}
+$presupuestoDetalleV2 = null;
+foreach ($presupuestosV2 as $pv2tmp) {
+    if ((int) ($pv2tmp['id'] ?? 0) === $verV2) { $presupuestoDetalleV2 = $pv2tmp; break; }
+}
+
 render_page_start('Presupuesto nuevo (V2 por insumo)');
 ?>
 <p class="muted">Cargá medidas en cm o m. Merma = % extra por desperdicio. Rendimiento = eficiencia del uso (1 = normal). Si elegís fleje, podés indicar separación para estimar tiras.</p>
+
+<?php if ($presupuestoDetalleV2 !== null): ?>
+<section class="card" style="margin-bottom:12px;">
+  <h3 style="margin-top:0;">Detalle Presupuesto V2 #<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?></h3>
+  <div class="inline-actions">
+    <button type="button" onclick="window.print()">Imprimir</button>
+    <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?>">Abrir en nueva pestaña</a>
+  </div>
+  <?php foreach ((array) ($presupuestoDetalleV2['estructura_insumos_v2'] ?? []) as $item): ?>
+    <details style="margin-top:8px;">
+      <summary><?= h((string) ($item['insumo']['nombre'] ?? 'Insumo')) ?> | Capa: <?= h((string) ($item['capa'] ?? '')) ?></summary>
+      <?php foreach ((array) ($item['modulos'] ?? []) as $mod): ?>
+        <div style="margin-left:12px;"><strong><?= h((string) ($mod['modulo'] ?? '')) ?></strong></div>
+        <?php foreach ((array) ($mod['piezas'] ?? []) as $pieza): ?>
+          <div style="margin-left:24px;"><?= h((string) ($pieza['pieza'] ?? '')) ?>: <?= (float) ($pieza['alto'] ?? 0) ?> x <?= (float) ($pieza['ancho'] ?? 0) ?> (<?= (int) ($pieza['cantidad'] ?? 0) ?>)</div>
+        <?php endforeach; ?>
+      <?php endforeach; ?>
+    </details>
+  <?php endforeach; ?>
+</section>
+<?php endif; ?>
+
 
 <section class="card" style="margin-bottom:12px;">
   <h3 style="margin-top:0;">Historial Presupuestos V2</h3>
@@ -342,7 +404,10 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <td>
           <form method="post" style="display:inline;">
             <input type="hidden" name="id" value="<?= (int) ($pv2['id'] ?? 0) ?>">
+            <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($pv2['id'] ?? 0) ?>">Detalle</a>
+            <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php?editar_v2=<?= (int) ($pv2['id'] ?? 0) ?>">Modificar</a>
             <button type="submit" name="action" value="duplicate_v2" class="secondary-btn">Duplicar</button>
+            <button type="submit" name="action" value="delete_v2" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto V2?');">Eliminar</button>
           </form>
         </td>
       </tr>
@@ -353,6 +418,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
 <p class="muted"><strong>Config activa:</strong> versión <?= h((string) ($configCapas['version'] ?? 'manual')) ?> (snapshot se guarda en cada presupuesto V2).</p>
 <form method="post" class="form-grid" id="v2-form">
+  <input type="hidden" name="action" value="<?= $presupuestoEdit !== null ? "update_v2" : "create" ?>">
+  <?php if ($presupuestoEdit !== null): ?><input type="hidden" name="id" value="<?= (int) ($presupuestoEdit["id"] ?? 0) ?>"><?php endif; ?>
   <label>Cliente
     <select name="cliente_id" required>
       <option value="">Seleccionar...</option>
@@ -363,7 +430,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   </label>
 
   <label>Detalle
-    <input type="text" name="detalle" placeholder="Ej: Prueba flujo por insumo">
+    <input type="text" name="detalle" placeholder="Ej: Prueba flujo por insumo" value="<?= h((string) ($presupuestoEdit["detalle"] ?? "")) ?>">
   </label>
 
 
@@ -377,11 +444,11 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   </label>
 
   <label>Mano de obra
-    <input type="number" name="mano_obra" step="0.01" min="0" value="0" id="mano_obra_v2">
+    <input type="number" name="mano_obra" step="0.01" min="0" value="<?= (float) ($presupuestoEdit["mano_obra"] ?? 0) ?>" id="mano_obra_v2">
   </label>
 
   <label>Margen (%)
-    <input type="number" name="margen" step="0.01" min="0" value="30" id="margen_v2">
+    <input type="number" name="margen" step="0.01" min="0" value="<?= (float) ($presupuestoEdit["margen"] ?? 30) ?>" id="margen_v2">
   </label>
 
   <section class="card" style="grid-column:1 / -1;">
