@@ -350,6 +350,7 @@ $presupuestosV2 = array_values(array_filter($presupuestos, static function (arra
 }));
 
 $verV2 = (int) ($_GET['ver_v2'] ?? 0);
+$soloDetalleV2 = (($_GET['solo_detalle_v2'] ?? '') === '1');
 $editarV2 = (int) ($_GET['editar_v2'] ?? 0);
 $presupuestoEdit = null;
 foreach ($presupuestosV2 as $pv2tmp) {
@@ -362,6 +363,35 @@ foreach ($presupuestosV2 as $pv2tmp) {
 
 render_page_start('Presupuesto nuevo (V2 por insumo)');
 ?>
+
+<?php if ($soloDetalleV2): ?>
+  <?php if ($presupuestoDetalleV2 === null): ?>
+    <p class="flash">No se encontró el presupuesto V2 solicitado.</p>
+  <?php else: ?>
+    <section class="card" style="margin-bottom:12px;">
+      <h3 style="margin-top:0;">Detalle Presupuesto V2 #<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?></h3>
+      <div class="inline-actions">
+        <button type="button" onclick="window.print()">Imprimir</button>
+        <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php">Volver</a>
+      </div>
+      <p><strong>Detalle:</strong> <?= h((string) ($presupuestoDetalleV2['detalle'] ?? '')) ?></p>
+      <p><strong>Total:</strong> <?= money((float) ($presupuestoDetalleV2['total'] ?? 0)) ?></p>
+      <?php foreach ((array) ($presupuestoDetalleV2['estructura_insumos_v2'] ?? []) as $item): ?>
+        <details open style="margin-top:8px;">
+          <summary><strong><?= h((string) ($item['insumo']['nombre'] ?? 'Insumo')) ?></strong> | Capa: <?= h((string) ($item['capa'] ?? '')) ?> | Cantidad: <?= (float) ($item['totales']['cantidad_total'] ?? 0) ?> | Valor: <?= money((float) ($item['totales']['costo_total'] ?? 0)) ?></summary>
+          <?php foreach ((array) ($item['modulos'] ?? []) as $mod): ?>
+            <div style="margin-left:12px;"><strong><?= h((string) ($mod['modulo'] ?? '')) ?></strong></div>
+            <?php foreach ((array) ($mod['piezas'] ?? []) as $pieza): ?>
+              <div style="margin-left:24px;"><?= h((string) ($pieza['pieza'] ?? '')) ?>: <?= (float) ($pieza['alto'] ?? 0) ?> x <?= (float) ($pieza['ancho'] ?? 0) ?> - cant <?= (int) ($pieza['cantidad'] ?? 0) ?></div>
+            <?php endforeach; ?>
+          <?php endforeach; ?>
+        </details>
+      <?php endforeach; ?>
+    </section>
+  <?php endif; ?>
+  <?php render_page_end(); exit; ?>
+<?php endif; ?>
+
 <p class="muted">Cargá medidas en cm o m. Merma = % extra por desperdicio. Rendimiento = eficiencia del uso (1 = normal). Si elegís fleje, podés indicar separación para estimar tiras.</p>
 
 <?php if ($presupuestoDetalleV2 !== null): ?>
@@ -369,7 +399,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   <h3 style="margin-top:0;">Detalle Presupuesto V2 #<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?></h3>
   <div class="inline-actions">
     <button type="button" onclick="window.print()">Imprimir</button>
-    <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?>">Abrir en nueva pestaña</a>
+    <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?>&solo_detalle_v2=1">Abrir en nueva pestaña</a>
   </div>
   <?php foreach ((array) ($presupuestoDetalleV2['estructura_insumos_v2'] ?? []) as $item): ?>
     <details style="margin-top:8px;">
@@ -404,7 +434,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <td>
           <form method="post" style="display:inline;">
             <input type="hidden" name="id" value="<?= (int) ($pv2['id'] ?? 0) ?>">
-            <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($pv2['id'] ?? 0) ?>">Detalle</a>
+            <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($pv2['id'] ?? 0) ?>&solo_detalle_v2=1">Detalle</a>
             <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php?editar_v2=<?= (int) ($pv2['id'] ?? 0) ?>">Modificar</a>
             <button type="submit" name="action" value="duplicate_v2" class="secondary-btn">Duplicar</button>
             <button type="submit" name="action" value="delete_v2" class="danger-btn" onclick="return confirm('¿Eliminar presupuesto V2?');">Eliminar</button>
