@@ -93,24 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto V2 eliminado.');
     }
 
-    if ($action === 'update_v2') {
-        $id = (int) ($_POST['id'] ?? 0);
-        $detalle = trim((string) ($_POST['detalle'] ?? ''));
-        $manoObra = (float) ($_POST['mano_obra'] ?? 0);
-        $margen = (float) ($_POST['margen'] ?? 30);
-        foreach ($presupuestos as &$p) {
-            if ((int) ($p['id'] ?? 0) !== $id) continue;
-            $p['detalle'] = $detalle;
-            $p['mano_obra'] = round($manoObra,2);
-            $p['margen'] = round($margen,2);
-            $materiales = (float) ($p['materiales'] ?? 0);
-            $p['total'] = round(($materiales + $manoObra) * (1 + ($margen/100)), 2);
-            break;
-        }
-        unset($p);
-        write_json(data_file('presupuestos'), $presupuestos);
-        redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto V2 actualizado.');
-    }
 
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
@@ -314,8 +296,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $actor = (string) ($_SERVER['REMOTE_ADDR'] ?? 'local');
 
-    $presupuestos[] = [
-        'id' => next_id($presupuestos),
+    $presupuestoPayload = [
+        'id' => $action === 'update_v2' ? (int) ($_POST['id'] ?? 0) : next_id($presupuestos),
         'cliente_id' => $clienteId,
         'detalle' => $detalle,
         'mueble_tipo' => $muebleTipo,
@@ -333,9 +315,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'audit' => [
             'created_at' => date('c'),
             'created_by' => $actor,
-            'flow' => 'presupuesto_v2',
+            'flow' => $action === 'update_v2' ? 'presupuesto_v2_update' : 'presupuesto_v2',
         ],
     ];
+
+    if ($action === 'update_v2') {
+        $updated = false;
+        foreach ($presupuestos as &$presupuestoExistente) {
+            if ((int) ($presupuestoExistente['id'] ?? 0) !== (int) $presupuestoPayload['id']) {
+                continue;
+            }
+            $presupuestoPayload['fecha'] = (string) ($presupuestoExistente['fecha'] ?? date('Y-m-d'));
+            $presupuestoPayload['estado'] = (string) ($presupuestoExistente['estado'] ?? 'borrador');
+            $presupuestoExistente = $presupuestoPayload;
+            $updated = true;
+            break;
+        }
+        unset($presupuestoExistente);
+        if (!$updated) {
+            redirect_with_message('presupuesto_nuevo_v2.php', 'No se encontró el presupuesto V2 para modificar.');
+        }
+        write_json(data_file('presupuestos'), $presupuestos);
+        redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto V2 actualizado.');
+    }
+
+    $presupuestos[] = $presupuestoPayload;
 
     write_json(data_file('presupuestos'), $presupuestos);
     redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto v2 creado correctamente.');
@@ -377,7 +381,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       <h3 style="margin-top:0;">Detalle Presupuesto V2 #<?= (int) ($presupuestoDetalleV2['id'] ?? 0) ?></h3>
       <div class="inline-actions">
         <button type="button" onclick="window.print()">Imprimir</button>
-        <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php">Volver</a>
+        <button type="button" class="secondary-btn" onclick="window.close()">Cerrar</button>
       </div>
       <p><strong>Detalle:</strong> <?= h((string) ($presupuestoDetalleV2['detalle'] ?? '')) ?></p>
       <p><strong>Total:</strong> <?= money((float) ($presupuestoDetalleV2['total'] ?? 0)) ?></p>
@@ -498,6 +502,24 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
   <?php for ($i = 0; $i < 3; $i++): ?>
   <?php $editItem = $editItems[$i] ?? null; ?>
+  <?php
+    $editModulos = [];
+    if ($editItem !== null) {
+        foreach ((array) ($editItem['modulos'] ?? []) as $editModuloData) {
+            $editModuloNombre = (string) ($editModuloData['modulo'] ?? '');
+            if ($editModuloNombre === '') {
+                continue;
+            }
+            $editModulos[$editModuloNombre] = [];
+            foreach ((array) ($editModuloData['piezas'] ?? []) as $editPiezaData) {
+                $editPiezaNombre = (string) ($editPiezaData['pieza'] ?? '');
+                if ($editPiezaNombre !== '') {
+                    $editModulos[$editModuloNombre][$editPiezaNombre] = $editPiezaData;
+                }
+            }
+        }
+    }
+  ?>
   <fieldset style="grid-column:1 / -1;" data-insumo-block="<?= $i ?>">
     <legend>Insumo <?= $i + 1 ?></legend>
     <div class="form-grid">
@@ -511,7 +533,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       </label>
 
       <label>Tipo de insumo
-        <select name="item_tipo_insumo[]" class="tipo-insumo" data-index="<?= $i ?>">
+        <select name="item_tipo_insumo[]" class="tipo-insumo" data-index="<?= $i ?>" data-selected="<?= h((string) ($editItem['tipo_insumo'] ?? "")) ?>">
           <option value="">Seleccionar...</option>
           <?php if ($editItem !== null && (string) ($editItem['tipo_insumo'] ?? "") !== ""): ?>
             <option value="<?= h((string) $editItem['tipo_insumo']) ?>" selected><?= h((string) $editItem['tipo_insumo']) ?></option>
@@ -554,13 +576,13 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       </label>
 
       <label data-tipo-field="gomaespuma">Largo placa (m)
-        <input type="number" name="item_largo_placa[]" step="0.01" min="0" value="2.00" class="largo-placa" data-index="<?= $i ?>">
+        <input type="number" name="item_largo_placa[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['largo_placa'] ?? 2.00) ?>" class="largo-placa" data-index="<?= $i ?>">
       </label>
       <label data-tipo-field="gomaespuma">Ancho placa (m)
-        <input type="number" name="item_ancho_placa[]" step="0.01" min="0" value="1.00" class="ancho-placa" data-index="<?= $i ?>">
+        <input type="number" name="item_ancho_placa[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['ancho_placa'] ?? 1.00) ?>" class="ancho-placa" data-index="<?= $i ?>">
       </label>
       <label data-tipo-field="gomaespuma">Espesor (mm)
-        <input type="number" name="item_espesor[]" step="1" min="0" value="30" class="espesor" data-index="<?= $i ?>">
+        <input type="number" name="item_espesor[]" step="1" min="0" value="<?= (float) ($editItem['parametros_calculo']['espesor'] ?? 30) ?>" class="espesor" data-index="<?= $i ?>">
       </label>
 
     </div>
@@ -568,19 +590,21 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     <details style="margin-top:8px;">
       <summary>Confirmar módulos y piezas (con medidas)</summary>
       <?php foreach ($modulos as $modulo): ?>
+        <?php $editModuloActivo = isset($editModulos[$modulo]); ?>
         <div class="card" style="margin-top:8px; padding:8px;">
-          <label style="display:block; margin-bottom:6px;"><input type="checkbox" name="item_modulo_<?= $i ?>_<?= h($modulo) ?>" data-modulo="<?= h($modulo) ?>" data-index="<?= $i ?>"> <?= h(ucwords(str_replace('_', ' ', $modulo))) ?></label>
+          <label style="display:block; margin-bottom:6px;"><input type="checkbox" name="item_modulo_<?= $i ?>_<?= h($modulo) ?>" data-modulo="<?= h($modulo) ?>" data-index="<?= $i ?>" <?= $editModuloActivo ? "checked" : "" ?>> <?= h(ucwords(str_replace('_', ' ', $modulo))) ?></label>
           <table class="table">
             <thead><tr><th>Usar</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Rotable</th></tr></thead>
             <tbody>
             <?php foreach ($piezas as $pieza): ?>
+              <?php $editPiezaData = $editModulos[$modulo][$pieza] ?? null; ?>
               <tr>
-                <td><input type="checkbox" name="item_pieza_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-check" data-index="<?= $i ?>"></td>
+                <td><input type="checkbox" name="item_pieza_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-check" data-index="<?= $i ?>" <?= $editPiezaData !== null ? "checked" : "" ?>></td>
                 <td><?= h(ucfirst($pieza)) ?></td>
-                <td><input type="number" step="0.01" min="0" name="item_alto_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>"></td>
-                <td><input type="number" step="0.01" min="0" name="item_ancho_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>"></td>
-                <td><input type="number" step="1" min="0" name="item_cant_pieza_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>"></td>
-                              <td><input type="checkbox" name="item_rotable_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" checked></td>
+                <td><input type="number" step="0.01" min="0" name="item_alto_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>" value="<?= (float) ($editPiezaData['alto'] ?? 0) ?>"></td>
+                <td><input type="number" step="0.01" min="0" name="item_ancho_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>" value="<?= (float) ($editPiezaData['ancho'] ?? 0) ?>"></td>
+                <td><input type="number" step="1" min="0" name="item_cant_pieza_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" class="pieza-medida" data-index="<?= $i ?>" value="<?= (int) ($editPiezaData['cantidad'] ?? 0) ?>"></td>
+                              <td><input type="checkbox" name="item_rotable_<?= $i ?>_<?= h($modulo) ?>_<?= h($pieza) ?>" <?= (bool) ($editPiezaData['rotable'] ?? true) ? "checked" : "" ?>></td>
               </tr>
             <?php endforeach; ?>
             </tbody>
@@ -588,7 +612,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         </div>
       <?php endforeach; ?>
     </details>
-    <input type="hidden" name="item_confirmado[]" value="0" class="confirmado-input" data-index="<?= $i ?>">
+    <input type="hidden" name="item_confirmado[]" value="<?= $editItem !== null ? 1 : 0 ?>" class="confirmado-input" data-index="<?= $i ?>">
     <div class="inline-actions">
       <button type="button" class="secondary-btn btn-confirmar" data-index="<?= $i ?>">Confirmar insumo</button>
       <button type="button" class="secondary-btn btn-editar" data-index="<?= $i ?>" disabled>Modificar</button>
@@ -604,6 +628,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 <script>
 (function () {
   const configCapas = <?= json_encode($configCapas, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  const isEditingV2 = <?= $presupuestoEdit !== null ? 'true' : 'false' ?>;
   function n(v) { return Number(v || 0); }
   function money(v) { return '$' + v.toFixed(2); }
 
@@ -664,11 +689,13 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     const tipoSel = document.querySelector('.tipo-insumo[data-index="' + index + '"]');
     if (!capaSel || !tipoSel) return;
     const capa = capaSel.value;
+    const selected = tipoSel.value || tipoSel.dataset.selected;
     const tipos = (configCapas.capas && configCapas.capas[capa] && configCapas.capas[capa].tipos_insumo_permitidos) ? configCapas.capas[capa].tipos_insumo_permitidos : [];
     tipoSel.innerHTML = '<option value="">Seleccionar...</option>';
     tipos.forEach(function(t){
       const op=document.createElement('option');
       op.value=t; op.textContent=t.replaceAll('_',' ');
+      if (t === selected) op.selected = true;
       tipoSel.appendChild(op);
     });
   }
@@ -866,7 +893,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   document.querySelectorAll('.capa-select').forEach(function(sel){ sel.addEventListener('change', function(){ fillTiposByCapa(sel.dataset.index); filterInsumos(sel.dataset.index); recalc(); }); });
   document.querySelectorAll('.tipo-insumo').forEach(function(sel){ sel.addEventListener('change', function(){ filterInsumos(sel.dataset.index); adaptCamposPorTipo(sel.dataset.index); recalc(); }); });
   for (let i=0;i<3;i++){ fillTiposByCapa(i); filterInsumos(i); adaptCamposPorTipo(i); }
-  applyMuebleDefaults();
+  if (!isEditingV2) applyMuebleDefaults();
   recalc();
 })();
 </script>
