@@ -356,6 +356,11 @@ $presupuestoEdit = null;
 foreach ($presupuestosV2 as $pv2tmp) {
     if ((int) ($pv2tmp['id'] ?? 0) === $editarV2) { $presupuestoEdit = $pv2tmp; break; }
 }
+$editItems = [];
+if ($presupuestoEdit !== null) {
+    $editItems = array_values((array) ($presupuestoEdit['estructura_insumos_v2'] ?? []));
+}
+
 $presupuestoDetalleV2 = null;
 foreach ($presupuestosV2 as $pv2tmp) {
     if ((int) ($pv2tmp['id'] ?? 0) === $verV2) { $presupuestoDetalleV2 = $pv2tmp; break; }
@@ -431,8 +436,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <td><?= h((string) ($pv2['fecha'] ?? '')) ?></td>
         <td><?= h((string) ($pv2['detalle'] ?? '')) ?></td>
         <td><?= money((float) ($pv2['total'] ?? 0)) ?></td>
-        <td>
-          <form method="post" style="display:inline;">
+        <td style="white-space:nowrap;">
+          <form method="post" style="display:inline-flex; gap:4px; align-items:center;">
             <input type="hidden" name="id" value="<?= (int) ($pv2['id'] ?? 0) ?>">
             <a class="secondary-btn action-link" target="_blank" rel="noopener" href="presupuesto_nuevo_v2.php?ver_v2=<?= (int) ($pv2['id'] ?? 0) ?>&solo_detalle_v2=1">Detalle</a>
             <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php?editar_v2=<?= (int) ($pv2['id'] ?? 0) ?>">Modificar</a>
@@ -454,7 +459,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     <select name="cliente_id" required>
       <option value="">Seleccionar...</option>
       <?php foreach ($clientes as $cliente): ?>
-        <option value="<?= (int) $cliente['id'] ?>"><?= h((string) $cliente['nombre']) ?></option>
+        <option value="<?= (int) $cliente['id'] ?>" <?= ((int) $cliente['id'] === (int) ($presupuestoEdit['cliente_id'] ?? 0)) ? "selected" : "" ?>><?= h((string) $cliente['nombre']) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
@@ -468,7 +473,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   <label>Tipo de mueble
     <select name="mueble_tipo" id="mueble_tipo_v2">
       <?php foreach (array_keys((array) ($configCapas['muebles'] ?? [])) as $muebleKey): ?>
-        <option value="<?= h((string) $muebleKey) ?>"><?= h(ucwords(str_replace('_', ' ', (string) $muebleKey))) ?></option>
+        <option value="<?= h((string) $muebleKey) ?>" <?= ((string) $muebleKey === (string) ($presupuestoEdit['mueble_tipo'] ?? "")) ? "selected" : "" ?>><?= h(ucwords(str_replace('_', ' ', (string) $muebleKey))) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
@@ -492,6 +497,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   </section>
 
   <?php for ($i = 0; $i < 3; $i++): ?>
+  <?php $editItem = $editItems[$i] ?? null; ?>
   <fieldset style="grid-column:1 / -1;" data-insumo-block="<?= $i ?>">
     <legend>Insumo <?= $i + 1 ?></legend>
     <div class="form-grid">
@@ -499,7 +505,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <select name="item_capa[]" class="capa-select" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
           <?php foreach (array_keys((array) ($configCapas['capas'] ?? [])) as $capa): ?>
-            <option value="<?= h((string) $capa) ?>"><?= h(ucwords(str_replace('_', ' ', (string) $capa))) ?></option>
+            <option value="<?= h((string) $capa) ?>" <?= ((string) $capa === (string) ($editItem['capa'] ?? "")) ? "selected" : "" ?>><?= h(ucwords(str_replace('_', ' ', (string) $capa))) ?></option>
           <?php endforeach; ?>
         </select>
       </label>
@@ -507,6 +513,9 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       <label>Tipo de insumo
         <select name="item_tipo_insumo[]" class="tipo-insumo" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
+          <?php if ($editItem !== null && (string) ($editItem['tipo_insumo'] ?? "") !== ""): ?>
+            <option value="<?= h((string) $editItem['tipo_insumo']) ?>" selected><?= h((string) $editItem['tipo_insumo']) ?></option>
+          <?php endif; ?>
         </select>
       </label>
       <small class="muted tipo-ayuda" id="tipo_ayuda_<?= $i ?>">Elegí capa y tipo para ver campos recomendados.</small>
@@ -514,34 +523,34 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <select name="item_insumo_id[]" class="insumo-selector" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
           <?php foreach ($insumos as $insumo): ?>
-            <option value="<?= (int) $insumo['id'] ?>" data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+            <option value="<?= (int) $insumo['id'] ?>" <?= ((int) ($insumo['id'] ?? 0) === (int) ($editItem['insumo']['id'] ?? 0)) ? "selected" : "" ?> data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
           <?php endforeach; ?>
         </select>
       </label>
       <label data-tipo-field="all">Cantidad final manual (opcional)
-        <input type="number" name="item_cantidad[]" step="0.01" min="0" value="0" class="cantidad-manual" data-index="<?= $i ?>">
+        <input type="number" name="item_cantidad[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['cantidad_manual'] ?? 0) ?>" class="cantidad-manual" data-index="<?= $i ?>">
       </label>
       <label data-tipo-field="all">Merma %
-        <input type="number" name="item_merma[]" step="0.01" min="0" value="10" class="merma" data-index="<?= $i ?>">
+        <input type="number" name="item_merma[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['merma_pct'] ?? 10) ?>" class="merma" data-index="<?= $i ?>">
       </label>
       <label data-tipo-field="all">Rendimiento (ej: 0.90 = 10% pérdida adicional)
-        <input type="number" name="item_rendimiento[]" step="0.01" min="0.01" value="1" class="rendimiento" data-index="<?= $i ?>">
+        <input type="number" name="item_rendimiento[]" step="0.01" min="0.01" value="<?= (float) ($editItem['parametros_calculo']['rendimiento'] ?? 1) ?>" class="rendimiento" data-index="<?= $i ?>">
       </label>
 
       <label data-tipo-field="all">Unidad de carga
         <select name="item_unidad[]" class="unidad" data-index="<?= $i ?>">
-          <option value="m">Metros</option>
-          <option value="cm">Centímetros</option>
+          <option value="m" <?= ((string) ($editItem['parametros_calculo']['unidad_carga'] ?? "m") === "m") ? "selected" : "" ?>>Metros</option>
+          <option value="cm" <?= ((string) ($editItem['parametros_calculo']['unidad_carga'] ?? "m") === "cm") ? "selected" : "" ?>>Centímetros</option>
         </select>
       </label>
       <label data-tipo-field="tela gomaespuma guata fliselina">Ancho útil tela/placa (m)
-        <input type="number" name="item_ancho_tela[]" step="0.01" min="0" value="1.40" class="ancho-tela" data-index="<?= $i ?>">
+        <input type="number" name="item_ancho_tela[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['ancho_tela'] ?? 1.40) ?>" class="ancho-tela" data-index="<?= $i ?>">
       </label>
       <label>Precio unitario (opcional)
-        <input type="number" name="item_precio_manual[]" step="0.01" min="0" value="0" class="precio-manual" data-index="<?= $i ?>" placeholder="Si va vacío usa catálogo">
+        <input type="number" name="item_precio_manual[]" step="0.01" min="0" value="<?= (float) ($editItem['insumo']['costo_unitario'] ?? 0) ?>" class="precio-manual" data-index="<?= $i ?>" placeholder="Si va vacío usa catálogo">
       </label>
       <label data-tipo-field="fleje">Separación fleje (m)
-        <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="0" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
+        <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['separacion_fleje'] ?? 0) ?>" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
       </label>
 
       <label data-tipo-field="gomaespuma">Largo placa (m)
