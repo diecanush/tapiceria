@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "mueble_tipo": "silla",
+    "trabajo_tipo": "retapizado_asiento",
+    "complejidad": "media",
+    "tarifa_hora": 4500,
+    "tiempos_minutos": {
+      "desarme": 20,
+      "corte": 15,
+      "confeccion": 20,
+      "armado_capas": 25,
+      "terminacion": 15
+    },
+    "activo": true
+  },
+  {
+    "id": 2,
+    "mueble_tipo": "sillon_2_cuerpos",
+    "trabajo_tipo": "retapizado_completo",
+    "complejidad": "alta",
+    "tarifa_hora": 4500,
+    "tiempos_minutos": {
+      "desarme": 180,
+      "corte": 120,
+      "confeccion": 240,
+      "armado_capas": 180,
+      "terminacion": 90
+    },
+    "activo": true
+  },
+  {
+    "id": 3,
+    "mueble_tipo": "sillon_3_cuerpos",
+    "trabajo_tipo": "retapizado_completo",
+    "complejidad": "alta",
+    "tarifa_hora": 4500,
+    "tiempos_minutos": {
+      "desarme": 240,
+      "corte": 150,
+      "confeccion": 300,
+      "armado_capas": 240,
+      "terminacion": 120
+    },
+    "activo": true
+  }
+]

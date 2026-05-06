@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "muebles": {
+    "sillon_2_cuerpos": {"modulos_default": ["asiento", "respaldo", "brazo_izq", "brazo_der", "base"]},
+    "sillon_3_cuerpos": {"modulos_default": ["asiento", "respaldo", "brazo_izq", "brazo_der", "base"]},
+    "silla": {"modulos_default": ["asiento", "respaldo"]},
+    "otomana": {"modulos_default": ["asiento", "base"]},
+    "personalizado": {"modulos_default": []}
+  },
+  "capas": {
+    "estructura_suspension": {"tipos_insumo_permitidos": ["fleje", "grapas", "tachas"]},
+    "soporte_confort": {"tipos_insumo_permitidos": ["gomaespuma", "guata", "fliselina"]},
+    "regularizacion_proteccion": {"tipos_insumo_permitidos": ["guata", "fliselina", "adhesivo_contacto"]},
+    "cobertura": {"tipos_insumo_permitidos": ["tela", "cierre"]},
+    "fijacion_terminacion": {"tipos_insumo_permitidos": ["grapas", "tachas", "adhesivo_contacto", "otros"]}
+  }
+}
