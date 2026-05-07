@@ -119,6 +119,7 @@ render_page_start('Valores de mano de obra');
   <section class="card">
     <h3 style="margin-top:0;">Listado predeterminado</h3>
     <p class="muted">Dejá vacía la fila para no guardarla. Los tiempos se cargan en minutos por tarea.</p>
+    <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
@@ -150,7 +151,7 @@ render_page_start('Valores de mano de obra');
               <input type="checkbox" name="activo[<?= $i ?>]" <?= (bool) ($valor['activo'] ?? true) ? 'checked' : '' ?>>
             </td>
             <td>
-              <select name="mueble_tipo[]">
+              <select name="mueble_tipo[]" title="<?= h((string) ($valor['mueble_tipo'] ?? '')) ?>">
                 <option value="">Seleccionar...</option>
                 <?php foreach ($tiposMueble as $tipoMueble): ?>
                   <option value="<?= h((string) $tipoMueble) ?>" <?= (string) ($valor['mueble_tipo'] ?? '') === (string) $tipoMueble ? 'selected' : '' ?>><?= h(ucwords(str_replace('_', ' ', (string) $tipoMueble))) ?></option>
@@ -158,10 +159,10 @@ render_page_start('Valores de mano de obra');
               </select>
             </td>
             <td>
-              <input type="text" name="trabajo_tipo[]" list="trabajos_sugeridos" value="<?= h((string) ($valor['trabajo_tipo'] ?? '')) ?>" placeholder="retapizado_completo">
+              <input type="text" name="trabajo_tipo[]" list="trabajos_sugeridos" value="<?= h((string) ($valor['trabajo_tipo'] ?? '')) ?>" title="<?= h((string) ($valor['trabajo_tipo'] ?? '')) ?>" placeholder="retapizado_completo">
             </td>
             <td>
-              <select name="complejidad[]">
+              <select name="complejidad[]" title="<?= h(ucwords(str_replace('_', ' ', (string) ($valor['complejidad'] ?? 'media')))) ?>">
                 <?php foreach ($complejidades as $complejidad): ?>
                   <option value="<?= h($complejidad) ?>" <?= (string) ($valor['complejidad'] ?? 'media') === $complejidad ? 'selected' : '' ?>><?= h(ucwords(str_replace('_', ' ', $complejidad))) ?></option>
                 <?php endforeach; ?>
@@ -177,6 +178,7 @@ render_page_start('Valores de mano de obra');
         <?php endfor; ?>
       </tbody>
     </table>
+    </div>
     <datalist id="trabajos_sugeridos">
       <?php foreach ($trabajosSugeridos as $trabajo): ?>
         <option value="<?= h($trabajo) ?>">

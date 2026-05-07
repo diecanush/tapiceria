@@ -298,3 +298,48 @@ button:hover { background: #1e40af; }
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Wide workspace: use almost all visible browser width for data-heavy screens. */
+.container {
+  width: calc(100vw - 24px);
+  max-width: none;
+  margin: 8px auto;
+  padding: 12px;
+}
+.topbar {
+  padding: 8px 12px;
+}
+.card {
+  padding: 10px;
+}
+.table-wrap,
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.table {
+  table-layout: auto;
+}
+.table th,
+.table td {
+  padding: 6px;
+  vertical-align: middle;
+}
+input,
+select,
+textarea {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+input[title],
+select[title],
+textarea[title] {
+  cursor: help;
+}
+@media (max-width: 768px) {
+  .container {
+    width: calc(100vw - 8px);
+    margin: 4px;
+    padding: 8px;
+  }
+}
