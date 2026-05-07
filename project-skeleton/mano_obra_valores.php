@@ -118,21 +118,17 @@ render_page_start('Valores de mano de obra');
 <form method="post">
   <section class="card">
     <h3 style="margin-top:0;">Listado predeterminado</h3>
-    <p class="muted">Dejá vacía la fila para no guardarla. Los tiempos se cargan en minutos por tarea.</p>
+    <p class="muted">Dejá vacía la fila para no guardarla. La grilla muestra el resumen; abrí <strong>Editar tareas</strong> en cada fila para modificar tarifa y minutos por tarea.</p>
     <div class="table-scroll">
-    <table class="table">
+    <table class="table mano-obra-table">
       <thead>
         <tr>
-          <th>Activo</th>
-          <th>Mueble</th>
-          <th>Trabajo</th>
-          <th>Complejidad</th>
-          <th>$/hora</th>
-          <?php foreach ($tareas as $tarea): ?>
-            <th><?= h($tareaLabels[$tarea] ?? $tarea) ?></th>
-          <?php endforeach; ?>
-          <th>Horas</th>
-          <th>Costo</th>
+          <th>Activo <span class="tooltip-icon" data-tooltip="Marcá si la plantilla debe estar disponible en el calculador y presupuestos.">?</span></th>
+          <th>Mueble <span class="tooltip-icon" data-tooltip="Tipo de mueble al que aplica la plantilla.">?</span></th>
+          <th>Trabajo <span class="tooltip-icon" data-tooltip="Tipo de trabajo o plantilla operativa sugerida.">?</span></th>
+          <th>Complejidad / tareas <span class="tooltip-icon" data-tooltip="La complejidad queda visible; los minutos por tarea se editan desplegando la fila.">?</span></th>
+          <th>Total horas <span class="tooltip-icon" data-tooltip="Suma automática de todos los minutos cargados en las tareas, expresada en horas.">?</span></th>
+          <th>Costo <span class="tooltip-icon" data-tooltip="Total horas multiplicado por la tarifa por hora configurada en el detalle desplegable.">?</span></th>
         </tr>
       </thead>
       <tbody>
@@ -145,10 +141,10 @@ render_page_start('Valores de mano de obra');
             $horas = $totalMinutos / 60;
             $tarifa = (float) ($valor['tarifa_hora'] ?? 0);
           ?>
-          <tr>
+          <tr class="mano-obra-row" data-row="<?= $i ?>">
             <td>
               <input type="hidden" name="id[]" value="<?= (int) ($valor['id'] ?? 0) ?>">
-              <input type="checkbox" name="activo[<?= $i ?>]" <?= (bool) ($valor['activo'] ?? true) ? 'checked' : '' ?>>
+              <input type="checkbox" name="activo[<?= $i ?>]" <?= (bool) ($valor['activo'] ?? true) ? 'checked' : '' ?> aria-label="Plantilla activa">
             </td>
             <td>
               <select name="mueble_tipo[]" title="<?= h((string) ($valor['mueble_tipo'] ?? '')) ?>">
@@ -161,19 +157,30 @@ render_page_start('Valores de mano de obra');
             <td>
               <input type="text" name="trabajo_tipo[]" list="trabajos_sugeridos" value="<?= h((string) ($valor['trabajo_tipo'] ?? '')) ?>" title="<?= h((string) ($valor['trabajo_tipo'] ?? '')) ?>" placeholder="retapizado_completo">
             </td>
-            <td>
+            <td class="mano-obra-detail-cell">
               <select name="complejidad[]" title="<?= h(ucwords(str_replace('_', ' ', (string) ($valor['complejidad'] ?? 'media')))) ?>">
                 <?php foreach ($complejidades as $complejidad): ?>
                   <option value="<?= h($complejidad) ?>" <?= (string) ($valor['complejidad'] ?? 'media') === $complejidad ? 'selected' : '' ?>><?= h(ucwords(str_replace('_', ' ', $complejidad))) ?></option>
                 <?php endforeach; ?>
               </select>
+              <details class="mano-obra-tareas">
+                <summary>Editar tareas</summary>
+                <div class="mano-obra-tareas-grid">
+                  <label>$/hora
+                    <span class="tooltip-icon" data-tooltip="Tarifa de referencia para calcular el costo de esta plantilla.">?</span>
+                    <input type="number" name="tarifa_hora[]" min="0" step="0.01" value="<?= (float) $tarifa ?>" class="mano-obra-tarifa" data-row="<?= $i ?>">
+                  </label>
+                  <?php foreach ($tareas as $tarea): ?>
+                    <label><?= h($tareaLabels[$tarea] ?? $tarea) ?>
+                      <span class="tooltip-icon" data-tooltip="Minutos estimados para <?= h($tareaLabels[$tarea] ?? $tarea) ?>.">?</span>
+                      <input type="number" name="tiempo_<?= h($tarea) ?>[]" min="0" step="1" value="<?= (int) ($tiempos[$tarea] ?? 0) ?>" class="mano-obra-minutos" data-row="<?= $i ?>">
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+              </details>
             </td>
-            <td><input type="number" name="tarifa_hora[]" min="0" step="0.01" value="<?= (float) $tarifa ?>" style="width:90px;"></td>
-            <?php foreach ($tareas as $tarea): ?>
-              <td><input type="number" name="tiempo_<?= h($tarea) ?>[]" min="0" step="1" value="<?= (int) ($tiempos[$tarea] ?? 0) ?>" style="width:75px;"></td>
-            <?php endforeach; ?>
-            <td><?= number_format($horas, 2, ',', '.') ?></td>
-            <td><?= money($horas * $tarifa) ?></td>
+            <td><span class="mano-obra-horas" data-row="<?= $i ?>"><?= number_format($horas, 2, ',', '.') ?></span></td>
+            <td><span class="mano-obra-costo" data-row="<?= $i ?>"><?= money($horas * $tarifa) ?></span></td>
           </tr>
         <?php endfor; ?>
       </tbody>
@@ -213,11 +220,32 @@ render_page_start('Valores de mano de obra');
     target.textContent = 'Horas hombre: ' + horasHombre.toFixed(2) + ' h | Duración con equipo: ' + duracionEquipo.toFixed(2) + ' h | Costo sugerido: ' + money(costo);
   }
 
+  function formatHoras(horas) {
+    return horas.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function recalcRow(rowId) {
+    const minutos = Array.from(document.querySelectorAll('.mano-obra-minutos[data-row="' + rowId + '"]'))
+      .reduce(function(total, el) { return total + Math.max(0, n(el.value)); }, 0);
+    const horas = minutos / 60;
+    const tarifa = n(document.querySelector('.mano-obra-tarifa[data-row="' + rowId + '"]')?.value);
+    const horasEl = document.querySelector('.mano-obra-horas[data-row="' + rowId + '"]');
+    const costoEl = document.querySelector('.mano-obra-costo[data-row="' + rowId + '"]');
+    if (horasEl) horasEl.textContent = formatHoras(horas);
+    if (costoEl) costoEl.textContent = money(horas * tarifa);
+  }
+
   ['mo_calc_preset', 'mo_calc_cantidad', 'mo_calc_personas', 'mo_calc_ajuste', 'mo_calc_extra'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', recalcManoObra);
     if (el) el.addEventListener('change', recalcManoObra);
   });
+
+  document.querySelectorAll('.mano-obra-minutos, .mano-obra-tarifa').forEach(function(el) {
+    el.addEventListener('input', function() { recalcRow(el.dataset.row); });
+    el.addEventListener('change', function() { recalcRow(el.dataset.row); });
+  });
+
   recalcManoObra();
 })();
 </script>
