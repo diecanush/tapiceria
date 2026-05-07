@@ -8,8 +8,17 @@ $configCapas = read_json(data_file('config_capas_insumos'));
 $mueblesConfig = array_keys((array) ($configCapas['muebles'] ?? []));
 $tiposMueble = $mueblesConfig === [] ? ['silla', 'sillon_2_cuerpos', 'sillon_3_cuerpos', 'personalizado'] : $mueblesConfig;
 $trabajosSugeridos = ['retapizado_asiento', 'retapizado_completo', 'cambio_gomaespuma', 'confeccion_funda', 'reparacion_suspension', 'personalizado'];
-$complejidades = ['baja', 'media', 'alta', 'especial'];
-$tareas = ['desarme', 'corte', 'confeccion', 'armado_capas', 'terminacion'];
+$complejidades = ['complejidad_1', 'complejidad_2', 'complejidad_3', 'especial'];
+$tareas = ['desarme', 'soporte_elastico', 'confort_gomaespuma', 'confort_guata', 'cobertura_corte_tela', 'cobertura_confeccion_tela', 'terminacion'];
+$tareaLabels = [
+    'desarme' => 'Desarme',
+    'soporte_elastico' => 'Soporte elástico',
+    'confort_gomaespuma' => 'Confort gomaespuma',
+    'confort_guata' => 'Confort guata',
+    'cobertura_corte_tela' => 'Cobertura corte tela',
+    'cobertura_confeccion_tela' => 'Cobertura confección tela',
+    'terminacion' => 'Terminación',
+];
 
 function parse_minutes_value(array $values, int $index): int
 {
@@ -68,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 render_page_start('Valores de mano de obra');
 ?>
-<p class="muted">Configurá tiempos estimados por tipo de trabajo y mueble. El costo sugerido se calcula como horas hombre × tarifa/hora.</p>
+<p class="muted">Configurá tiempos estimados por tipo de trabajo, mueble y complejidad. Las etapas siguen el cuadro operativo del tapicero: desarme, soporte elástico, confort, cobertura y terminación.</p>
 
 <section class="card" style="margin-bottom:12px;">
   <h3 style="margin-top:0;">Calculador rápido de horas hombre</h3>
@@ -118,11 +127,9 @@ render_page_start('Valores de mano de obra');
           <th>Trabajo</th>
           <th>Complejidad</th>
           <th>$/hora</th>
-          <th>Desarme</th>
-          <th>Corte</th>
-          <th>Confección</th>
-          <th>Armado capas</th>
-          <th>Terminación</th>
+          <?php foreach ($tareas as $tarea): ?>
+            <th><?= h($tareaLabels[$tarea] ?? $tarea) ?></th>
+          <?php endforeach; ?>
           <th>Horas</th>
           <th>Costo</th>
         </tr>
@@ -156,7 +163,7 @@ render_page_start('Valores de mano de obra');
             <td>
               <select name="complejidad[]">
                 <?php foreach ($complejidades as $complejidad): ?>
-                  <option value="<?= h($complejidad) ?>" <?= (string) ($valor['complejidad'] ?? 'media') === $complejidad ? 'selected' : '' ?>><?= h(ucfirst($complejidad)) ?></option>
+                  <option value="<?= h($complejidad) ?>" <?= (string) ($valor['complejidad'] ?? 'media') === $complejidad ? 'selected' : '' ?>><?= h(ucwords(str_replace('_', ' ', $complejidad))) ?></option>
                 <?php endforeach; ?>
               </select>
             </td>
