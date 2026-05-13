@@ -37,7 +37,7 @@ function infer_v2_insumo_categoria(array $insumo): string
 
     foreach ($reglas as $tipo => $tokens) {
         foreach ($tokens as $token) {
-            if ($token !== '' && str_contains($nombre, $token)) {
+            if ($token !== '' && strpos($nombre, $token) !== false) {
                 return $tipo;
             }
         }
@@ -50,7 +50,7 @@ function infer_v2_insumo_categoria(array $insumo): string
     return 'otros';
 }
 
-function parse_number_v2(mixed $value): float
+function parse_number_v2($value): float
 {
     $raw = trim((string) $value);
     if ($raw === '') {
@@ -58,7 +58,7 @@ function parse_number_v2(mixed $value): float
     }
 
     $normalized = preg_replace('/[^0-9,.-]/', '', $raw) ?? '';
-    if (str_contains($normalized, ',')) {
+    if (strpos($normalized, ',') !== false) {
         $normalized = str_replace('.', '', $normalized);
         $normalized = str_replace(',', '.', $normalized);
     } elseif (preg_match('/^-?\d{1,3}(?:\.\d{3})+$/', $normalized) === 1) {
