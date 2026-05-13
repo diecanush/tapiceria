@@ -5,12 +5,50 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $clientes = read_json(data_file('clientes'));
 $insumos = read_json(data_file('insumos'));
+$manoObraValores = read_json(data_file('mano_obra_valores'));
 $presupuestos = read_json(data_file('presupuestos'));
 $configCapas = read_json(data_file('config_capas_insumos'));
 
 $capas = ['estructura', 'confort', 'terminacion', 'proteccion'];
 $modulos = ['asiento', 'respaldo', 'brazo_izq', 'brazo_der', 'base'];
 $piezas = ['frente', 'lateral', 'superior', 'inferior', 'trasera'];
+
+
+function infer_v2_insumo_categoria(array $insumo): string
+{
+    $categoria = trim((string) ($insumo['categoria'] ?? ''));
+    if ($categoria !== '') {
+        return $categoria;
+    }
+
+    $nombre = mb_strtolower((string) ($insumo['nombre'] ?? ''));
+    $unidad = mb_strtolower((string) ($insumo['unidad'] ?? ''));
+    $reglas = [
+        'tela' => ['tela', 'chenille', 'lino', 'cuero', 'ecocuero', 'pana'],
+        'gomaespuma' => ['gomaespuma', 'goma espuma', 'espuma', 'placa'],
+        'guata' => ['guata', 'vellon', 'vellón'],
+        'fliselina' => ['fliselina', 'friselina'],
+        'fleje' => ['fleje', 'cincha', 'elastico', 'elástico'],
+        'grapas' => ['grapa'],
+        'tachas' => ['tacha'],
+        'cierre' => ['cierre', 'cremallera'],
+        'adhesivo_contacto' => ['adhesivo', 'pegamento', 'cola', 'cemento'],
+    ];
+
+    foreach ($reglas as $tipo => $tokens) {
+        foreach ($tokens as $token) {
+            if ($token !== '' && str_contains($nombre, $token)) {
+                return $tipo;
+            }
+        }
+    }
+
+    if (in_array($unidad, ['m', 'metro', 'metros'], true)) {
+        return 'tela';
+    }
+
+    return 'otros';
+}
 
 
 function estimate_tela_base(array $modulosAplicados, float $anchoTela, string $unidad): float
@@ -55,6 +93,51 @@ function estimate_tela_base(array $modulosAplicados, float $anchoTela, string $u
     return $metrosLineales;
 }
 
+function mano_obra_v2_total(array $plantilla): float
+{
+    $minutos = 0;
+    foreach ((array) ($plantilla['tiempos_minutos'] ?? []) as $valor) {
+        $minutos += max(0, (int) $valor);
+    }
+
+    return ($minutos / 60) * max(0, (float) ($plantilla['tarifa_hora'] ?? 0));
+}
+
+function round_gomaespuma_fraction(float $placas): float
+{
+    if ($placas <= 0 || $placas >= 1) {
+        return $placas;
+    }
+
+    $fracciones = [0.25, 1 / 3, 0.5, 2 / 3, 1.0];
+    foreach ($fracciones as $fraccion) {
+        if ($placas <= $fraccion) {
+            return $fraccion;
+        }
+    }
+
+    return 1.0;
+}
+
+function gomaespuma_fraction_label(float $placas): string
+{
+    $labels = [
+        '0.25' => '1/4 placa',
+        '0.3333' => '1/3 placa',
+        '0.5' => '1/2 placa',
+        '0.6667' => '2/3 placa',
+        '1' => '1 placa',
+    ];
+
+    foreach ($labels as $valor => $label) {
+        if (abs($placas - (float) $valor) < 0.01) {
+            return $label;
+        }
+    }
+
+    return rtrim(rtrim(number_format($placas, 4, '.', ''), '0'), '.') . ' placas';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = (string) ($_POST['action'] ?? 'create');
@@ -97,6 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
     $manoObra = (float) ($_POST['mano_obra'] ?? 0);
+    $manoObraPlantillaId = (int) ($_POST['mano_obra_plantilla_id'] ?? 0);
     $margen = (float) ($_POST['margen'] ?? 30);
     $muebleTipo = trim((string) ($_POST['mueble_tipo'] ?? 'personalizado'));
 
@@ -106,6 +190,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($muebleTipo === '') {
         $muebleTipo = 'personalizado';
+    }
+
+    $manoObraPlantillaSnapshot = null;
+    foreach ($manoObraValores as $plantilla) {
+        if ((int) ($plantilla['id'] ?? 0) !== $manoObraPlantillaId) {
+            continue;
+        }
+        $manoObraPlantillaSnapshot = $plantilla;
+        if ($manoObra <= 0) {
+            $manoObra = mano_obra_v2_total($plantilla);
+        }
+        break;
     }
 
     $itemCapas = $_POST['item_capa'] ?? [];
@@ -127,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $materiales = 0.0;
     $insumosById = [];
     foreach ($insumos as $insumo) {
+        $insumo['categoria_normalizada_v2'] = infer_v2_insumo_categoria($insumo);
         $insumosById[(int) ($insumo['id'] ?? 0)] = $insumo;
     }
 
@@ -236,19 +333,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-                $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
+        $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
         if ($tipoInsumo === 'tela' && $cantidadManual <= 0) {
             $telaBase = estimate_tela_base($modulosAplicados, $anchoTela, $unidad);
             if ($telaBase > 0) {
                 $cantidadBase = $telaBase;
             }
         }
-        if ((string) ($insumosById[$insumoId]['categoria'] ?? '') === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
+        if ((string) ($insumosById[$insumoId]['categoria_normalizada_v2'] ?? infer_v2_insumo_categoria($insumosById[$insumoId])) === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
             $cantidadBase = $areaPiezas / $separacionFleje;
         }
         if ($tipoInsumo === 'gomaespuma' && $largoPlaca > 0 && $anchoPlaca > 0 && $cantidadManual <= 0) {
             $placaArea = $largoPlaca * $anchoPlaca;
-            $cantidadBase = (float) ceil($areaPiezas / $placaArea);
+            $placasNecesarias = $areaPiezas / $placaArea;
+            $cantidadBase = $placasNecesarias < 1 ? round_gomaespuma_fraction($placasNecesarias) : (float) ceil($placasNecesarias);
         }
         $merma = (float) ($itemMermas[$i] ?? 0);
         $rendimiento = max(0.0001, (float) ($itemRendimientos[$i] ?? 1));
@@ -277,6 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'espesor' => $espesor,
                 'cantidad_base' => round($cantidadBase, 4),
                 'base_origen' => $cantidadManual > 0 ? 'manual' : 'piezas',
+                'fraccion_placa' => $tipoInsumo === 'gomaespuma' ? gomaespuma_fraction_label($cantidadBase) : '',
                 'merma_pct' => $merma,
                 'rendimiento' => $rendimiento,
             ],
@@ -302,6 +401,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'detalle' => $detalle,
         'mueble_tipo' => $muebleTipo,
         'mano_obra' => round($manoObra, 2),
+        'mano_obra_plantilla_id' => $manoObraPlantillaSnapshot !== null ? $manoObraPlantillaId : null,
+        'mano_obra_plantilla_snapshot' => $manoObraPlantillaSnapshot,
         'materiales' => round($materiales, 2),
         'margen' => round($margen, 2),
         'impuesto' => 0,
@@ -364,6 +465,9 @@ $editItems = [];
 if ($presupuestoEdit !== null) {
     $editItems = array_values((array) ($presupuestoEdit['estructura_insumos_v2'] ?? []));
 }
+$manoObraPlantillasV2 = array_values(array_filter($manoObraValores, static function (array $plantilla): bool {
+    return (bool) ($plantilla['activo'] ?? true) && (int) ($plantilla['id'] ?? 0) > 0;
+}));
 
 $presupuestoDetalleV2 = null;
 foreach ($presupuestosV2 as $pv2tmp) {
@@ -482,6 +586,21 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     </select>
   </label>
 
+  <label>Plantilla de mano de obra
+    <select name="mano_obra_plantilla_id" id="mano_obra_plantilla_v2">
+      <option value="" data-costo="0" data-mueble="">Manual / sin plantilla</option>
+      <?php foreach ($manoObraPlantillasV2 as $plantilla): ?>
+        <?php
+          $plantillaId = (int) ($plantilla['id'] ?? 0);
+          $plantillaCosto = mano_obra_v2_total($plantilla);
+          $plantillaMueble = (string) ($plantilla['mueble_tipo'] ?? '');
+          $plantillaLabel = ucwords(str_replace('_', ' ', $plantillaMueble)) . ' / ' . ucwords(str_replace('_', ' ', (string) ($plantilla['trabajo_tipo'] ?? 'trabajo'))) . ' / ' . ucwords(str_replace('_', ' ', (string) ($plantilla['complejidad'] ?? '')));
+        ?>
+        <option value="<?= $plantillaId ?>" data-costo="<?= $plantillaCosto ?>" data-mueble="<?= h($plantillaMueble) ?>" <?= $plantillaId === (int) ($presupuestoEdit['mano_obra_plantilla_id'] ?? 0) ? 'selected' : '' ?>><?= h($plantillaLabel) ?> — <?= money($plantillaCosto) ?></option>
+      <?php endforeach; ?>
+    </select>
+  </label>
+
   <label>Mano de obra
     <input type="number" name="mano_obra" step="0.01" min="0" value="<?= (float) ($presupuestoEdit["mano_obra"] ?? 0) ?>" id="mano_obra_v2">
   </label>
@@ -545,7 +664,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <select name="item_insumo_id[]" class="insumo-selector" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
           <?php foreach ($insumos as $insumo): ?>
-            <option value="<?= (int) $insumo['id'] ?>" <?= ((int) ($insumo['id'] ?? 0) === (int) ($editItem['insumo']['id'] ?? 0)) ? "selected" : "" ?> data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+            <option value="<?= (int) $insumo['id'] ?>" <?= ((int) ($insumo['id'] ?? 0) === (int) ($editItem['insumo']['id'] ?? 0)) ? "selected" : "" ?> data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h(infer_v2_insumo_categoria($insumo)) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
           <?php endforeach; ?>
         </select>
       </label>
@@ -770,6 +889,32 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     return total;
   }
 
+  function roundGomaespumaFraction(placas) {
+    if (placas <= 0 || placas >= 1) return placas;
+    const fracciones = [0.25, 1 / 3, 0.5, 2 / 3, 1];
+    return fracciones.find(function(fraccion) { return placas <= fraccion; }) || 1;
+  }
+
+  function gomaespumaFractionLabel(placas) {
+    if (Math.abs(placas - 0.25) < 0.01) return '1/4 placa';
+    if (Math.abs(placas - (1 / 3)) < 0.01) return '1/3 placa';
+    if (Math.abs(placas - 0.5) < 0.01) return '1/2 placa';
+    if (Math.abs(placas - (2 / 3)) < 0.01) return '2/3 placa';
+    if (Math.abs(placas - 1) < 0.01) return '1 placa';
+    return placas.toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + ' placas';
+  }
+
+  function applyManoObraTemplate() {
+    const select = document.getElementById('mano_obra_plantilla_v2');
+    const input = document.getElementById('mano_obra_v2');
+    if (!select || !input) return;
+    const costo = n(select.selectedOptions[0]?.dataset?.costo);
+    if (costo > 0) {
+      input.value = costo.toFixed(2);
+    }
+    recalc();
+  }
+
 
   function renderResumenTecnico() {
     const host = document.getElementById('resumen_tecnico_v2');
@@ -820,12 +965,15 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       let area = piezasArea(i);
       if (unidad === 'cm') { area = area / 10000; manual = manual / 100; }
       let base = manual > 0 ? manual : area;
-      const categoria = (select?.selectedOptions[0]?.textContent || '').toLowerCase();
+      const categoria = (select?.selectedOptions[0]?.dataset?.categoria || '').toLowerCase();
       const tipo = document.querySelector('.tipo-insumo[data-index="' + i + '"]')?.value || '';
       if (categoria.includes('fleje') && sepFleje > 0 && manual <= 0) { base = area / sepFleje; }
       const largoPlaca = n(document.querySelector('.largo-placa[data-index="' + i + '"]')?.value);
       const anchoPlaca = n(document.querySelector('.ancho-placa[data-index="' + i + '"]')?.value);
-      if (tipo === 'gomaespuma' && largoPlaca > 0 && anchoPlaca > 0 && manual <= 0) { base = Math.ceil(area / (largoPlaca * anchoPlaca)); }
+      if (tipo === 'gomaespuma' && largoPlaca > 0 && anchoPlaca > 0 && manual <= 0) {
+        const placasNecesarias = area / (largoPlaca * anchoPlaca);
+        base = placasNecesarias < 1 ? roundGomaespumaFraction(placasNecesarias) : Math.ceil(placasNecesarias);
+      }
       const anchoTela = n(document.querySelector('.ancho-tela[data-index="' + i + '"]')?.value);
       if (tipo === 'tela' && manual <= 0) {
         const telaBase = estimateTelaBase(i, anchoTela, unidad);
@@ -856,7 +1004,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       const parcial = document.getElementById('parcial_' + i);
       if (parcial) {
         const confirmado = document.querySelector('.confirmado-input[data-index="' + i + '"]')?.value === '1';
-        parcial.textContent = (confirmado ? '[Confirmado] ' : '[Pendiente] ') + 'Estimación parcial: base ' + base.toFixed(2) + ' m (' + (manual > 0 ? 'manual' : 'piezas') + '), merma ' + merma.toFixed(2) + '%, rendimiento ' + rendimiento.toFixed(2) + ', precio ' + money(precio) + ', costo ' + money(subtotal);
+        const baseLabel = tipo === 'gomaespuma' ? gomaespumaFractionLabel(base) : base.toFixed(2) + ' m';
+        parcial.textContent = (confirmado ? '[Confirmado] ' : '[Pendiente] ') + 'Estimación parcial: base ' + baseLabel + ' (' + (manual > 0 ? 'manual' : 'piezas') + '), merma ' + merma.toFixed(2) + '%, rendimiento ' + rendimiento.toFixed(2) + ', precio ' + money(precio) + ', costo ' + money(subtotal);
       }
       const alerta = document.getElementById('alerta_' + i);
       if (alerta) {
@@ -889,6 +1038,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   });
   document.querySelectorAll('.btn-confirmar').forEach(function(btn){ btn.addEventListener('click', function(){ confirmar(btn.dataset.index); }); });
   document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
+  document.getElementById('mano_obra_plantilla_v2')?.addEventListener('change', applyManoObraTemplate);
   document.getElementById('mueble_tipo_v2')?.addEventListener('change', function(){ applyMuebleDefaults(); recalc(); });
   document.querySelectorAll('.capa-select').forEach(function(sel){ sel.addEventListener('change', function(){ fillTiposByCapa(sel.dataset.index); filterInsumos(sel.dataset.index); recalc(); }); });
   document.querySelectorAll('.tipo-insumo').forEach(function(sel){ sel.addEventListener('change', function(){ filterInsumos(sel.dataset.index); adaptCamposPorTipo(sel.dataset.index); recalc(); }); });
