@@ -50,6 +50,34 @@ function infer_v2_insumo_categoria(array $insumo): string
     return 'otros';
 }
 
+function parse_number_v2(mixed $value): float
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return 0.0;
+    }
+
+    $normalized = preg_replace('/[^0-9,.-]/', '', $raw) ?? '';
+    if (str_contains($normalized, ',')) {
+        $normalized = str_replace('.', '', $normalized);
+        $normalized = str_replace(',', '.', $normalized);
+    } elseif (preg_match('/^-?\d{1,3}(?:\.\d{3})+$/', $normalized) === 1) {
+        $normalized = str_replace('.', '', $normalized);
+    } else {
+        $normalized = str_replace(',', '', $normalized);
+    }
+
+    return is_numeric($normalized) ? (float) $normalized : 0.0;
+}
+
+function format_ars_input(float $value): string
+{
+    if ($value <= 0) {
+        return '';
+    }
+
+    return number_format($value, 2, ',', '.');
+}
 
 function estimate_tela_base(array $modulosAplicados, float $anchoTela, string $unidad): float
 {
@@ -179,9 +207,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $clienteId = (int) ($_POST['cliente_id'] ?? 0);
     $detalle = trim((string) ($_POST['detalle'] ?? ''));
-    $manoObra = (float) ($_POST['mano_obra'] ?? 0);
+    $manoObra = parse_number_v2($_POST['mano_obra'] ?? 0);
     $manoObraPlantillaId = (int) ($_POST['mano_obra_plantilla_id'] ?? 0);
-    $margen = (float) ($_POST['margen'] ?? 30);
+    $margen = parse_number_v2($_POST['margen'] ?? 30);
     $muebleTipo = trim((string) ($_POST['mueble_tipo'] ?? 'personalizado'));
 
     if ($clienteId <= 0) {
@@ -257,8 +285,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!isset($_POST[$piezaKey])) {
                     continue;
                 }
-                $alto = (float) ($_POST['item_alto_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
-                $ancho = (float) ($_POST['item_ancho_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
+                $alto = parse_number_v2($_POST['item_alto_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
+                $ancho = parse_number_v2($_POST['item_ancho_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
                 $cantidadPieza = (int) ($_POST['item_cant_pieza_' . $i . '_' . $modulo . '_' . $pieza] ?? 0);
                 $rotable = isset($_POST['item_rotable_' . $i . '_' . $modulo . '_' . $pieza]);
                 if ($alto <= 0 || $ancho <= 0 || $cantidadPieza <= 0) {
@@ -289,14 +317,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-        $cantidadManual = (float) ($itemCantidades[$i] ?? 0);
+        $cantidadManual = parse_number_v2($itemCantidades[$i] ?? 0);
         $unidad = (string) ($itemUnidades[$i] ?? 'm');
-        $anchoTela = (float) ($itemAnchosTela[$i] ?? 0);
-        $precioManual = (float) ($itemPreciosManual[$i] ?? 0);
-        $separacionFleje = (float) ($itemSeparacionFleje[$i] ?? 0);
-        $largoPlaca = (float) ($itemLargoPlaca[$i] ?? 0);
-        $anchoPlaca = (float) ($itemAnchoPlaca[$i] ?? 0);
-        $espesor = (float) ($itemEspesor[$i] ?? 0);
+        $anchoTela = parse_number_v2($itemAnchosTela[$i] ?? 0);
+        $precioManual = parse_number_v2($itemPreciosManual[$i] ?? 0);
+        $separacionFleje = parse_number_v2($itemSeparacionFleje[$i] ?? 0);
+        $largoPlaca = parse_number_v2($itemLargoPlaca[$i] ?? 0);
+        $anchoPlaca = parse_number_v2($itemAnchoPlaca[$i] ?? 0);
+        $espesor = parse_number_v2($itemEspesor[$i] ?? 0);
 
         $areaPiezas = 0.0;
         foreach ($modulosAplicados as $moduloData) {
@@ -348,8 +376,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $placasNecesarias = $areaPiezas / $placaArea;
             $cantidadBase = $placasNecesarias < 1 ? round_gomaespuma_fraction($placasNecesarias) : (float) ceil($placasNecesarias);
         }
-        $merma = (float) ($itemMermas[$i] ?? 0);
-        $rendimiento = max(0.0001, (float) ($itemRendimientos[$i] ?? 1));
+        $merma = parse_number_v2($itemMermas[$i] ?? 0);
+        $rendimiento = max(0.0001, parse_number_v2($itemRendimientos[$i] ?? 1));
         $costoUnitario = $precioManual > 0 ? $precioManual : (float) ($insumosById[$insumoId]['precio'] ?? 0);
         $cantidadFinal = ($cantidadBase * (1 + ($merma / 100))) / $rendimiento;
         $subtotal = $cantidadFinal * $costoUnitario;
@@ -602,7 +630,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   </label>
 
   <label>Mano de obra
-    <input type="number" name="mano_obra" step="0.01" min="0" value="<?= (float) ($presupuestoEdit["mano_obra"] ?? 0) ?>" id="mano_obra_v2">
+    <input type="text" name="mano_obra" inputmode="decimal" value="<?= format_ars_input((float) ($presupuestoEdit["mano_obra"] ?? 0)) ?>" id="mano_obra_v2" placeholder="Ej: 58.500,00">
   </label>
 
   <label>Margen (%)
@@ -619,7 +647,8 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     <div id="resumen_tecnico_v2" class="muted">Sin datos aún.</div>
   </section>
 
-  <?php for ($i = 0; $i < 3; $i++): ?>
+  <?php $insumoRows = max(3, count($editItems)); ?>
+  <?php for ($i = 0; $i < $insumoRows; $i++): ?>
   <?php $editItem = $editItems[$i] ?? null; ?>
   <?php
     $editModulos = [];
@@ -688,7 +717,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <input type="number" name="item_ancho_tela[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['ancho_tela'] ?? 1.40) ?>" class="ancho-tela" data-index="<?= $i ?>">
       </label>
       <label>Precio unitario (opcional)
-        <input type="number" name="item_precio_manual[]" step="0.01" min="0" value="<?= (float) ($editItem['insumo']['costo_unitario'] ?? 0) ?>" class="precio-manual" data-index="<?= $i ?>" placeholder="Si va vacío usa catálogo">
+        <input type="text" name="item_precio_manual[]" inputmode="decimal" value="<?= format_ars_input((float) ($editItem['insumo']['costo_unitario'] ?? 0)) ?>" class="precio-manual precio-ars" data-index="<?= $i ?>" placeholder="Ej: 12.500,50">
       </label>
       <label data-tipo-field="fleje">Separación fleje (m)
         <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['separacion_fleje'] ?? 0) ?>" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
@@ -706,11 +735,11 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
     </div>
 
-    <details style="margin-top:8px;">
+    <details style="margin-top:8px;" class="modulos-details" data-index="<?= $i ?>">
       <summary>Confirmar módulos y piezas (con medidas)</summary>
       <?php foreach ($modulos as $modulo): ?>
         <?php $editModuloActivo = isset($editModulos[$modulo]); ?>
-        <div class="card" style="margin-top:8px; padding:8px;">
+        <div class="card modulo-card" data-modulo-card="<?= h($modulo) ?>" style="margin-top:8px; padding:8px;">
           <label style="display:block; margin-bottom:6px;"><input type="checkbox" name="item_modulo_<?= $i ?>_<?= h($modulo) ?>" data-modulo="<?= h($modulo) ?>" data-index="<?= $i ?>" <?= $editModuloActivo ? "checked" : "" ?>> <?= h(ucwords(str_replace('_', ' ', $modulo))) ?></label>
           <table class="table">
             <thead><tr><th>Usar</th><th>Pieza</th><th>Alto</th><th>Ancho</th><th>Cantidad</th><th>Rotable</th></tr></thead>
@@ -730,6 +759,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
           </table>
         </div>
       <?php endforeach; ?>
+      <button type="button" class="secondary-btn btn-agregar-modulo" data-index="<?= $i ?>" style="margin-top:8px;">Agregar módulo</button>
     </details>
     <input type="hidden" name="item_confirmado[]" value="<?= $editItem !== null ? 1 : 0 ?>" class="confirmado-input" data-index="<?= $i ?>">
     <div class="inline-actions">
@@ -741,15 +771,33 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
   </fieldset>
   <?php endfor; ?>
 
-  <div><button type="submit">Guardar presupuesto V2</button></div>
+  <div class="inline-actions" id="acciones-presupuesto-v2" style="grid-column:1 / -1;">
+    <button type="button" class="secondary-btn" id="btn-agregar-insumo">Agregar insumo</button>
+    <button type="submit">Guardar presupuesto V2</button>
+  </div>
 </form>
 
 <script>
 (function () {
   const configCapas = <?= json_encode($configCapas, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
   const isEditingV2 = <?= $presupuestoEdit !== null ? 'true' : 'false' ?>;
-  function n(v) { return Number(v || 0); }
+  function n(v) {
+    if (typeof v === 'string') {
+      let normalized = v.trim().replace(/[^0-9,.-]/g, '');
+      if (normalized.includes(',')) normalized = normalized.replace(/\./g, '').replace(',', '.');
+      else if (/^-?\d{1,3}(?:\.\d{3})+$/.test(normalized)) normalized = normalized.replace(/\./g, '');
+      else normalized = normalized.replace(/,/g, '');
+      return Number(normalized || 0);
+    }
+    return Number(v || 0);
+  }
   function money(v) { return '$' + v.toFixed(2); }
+  function formatArsInput(v) {
+    return Number(v || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function getInsumoIndexes() {
+    return Array.from(document.querySelectorAll('[data-insumo-block]')).map(function(block){ return block.dataset.insumoBlock; });
+  }
 
   function piezasArea(index) {
     let total = 0;
@@ -850,14 +898,41 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     }
   }
 
-  function applyMuebleDefaults() {
+  function moduleDefaultsForMueble() {
     const tipo = document.getElementById('mueble_tipo_v2')?.value || 'personalizado';
     const defaults = (configCapas.muebles && configCapas.muebles[tipo] && configCapas.muebles[tipo].modulos_default) ? configCapas.muebles[tipo].modulos_default : [];
-    for (let i = 0; i < 3; i++) {
-      document.querySelectorAll('input[data-index="' + i + '"][data-modulo]').forEach(function(chk){
-        chk.checked = defaults.includes(chk.dataset.modulo);
-      });
-    }
+    return defaults.length > 0 ? defaults : ['asiento'];
+  }
+
+  function applyModuleVisibility(index, force) {
+    const block = document.querySelector('[data-insumo-block="' + index + '"]');
+    if (!block) return;
+    const cards = Array.from(block.querySelectorAll('[data-modulo-card]'));
+    if (cards.length === 0) return;
+    const checked = cards.filter(function(card){ return card.querySelector('input[data-modulo]')?.checked; }).map(function(card){ return card.dataset.moduloCard; });
+    const visibles = (!force && checked.length > 0) ? checked : moduleDefaultsForMueble();
+    cards.forEach(function(card, idx){
+      const modulo = card.dataset.moduloCard;
+      const show = visibles.includes(modulo) || (visibles.length === 0 && idx === 0);
+      const chk = card.querySelector('input[data-modulo]');
+      card.style.display = show ? '' : 'none';
+      if (chk) chk.checked = show;
+    });
+  }
+
+  function applyMuebleDefaults() {
+    getInsumoIndexes().forEach(function(index){ applyModuleVisibility(index, true); });
+  }
+
+  function agregarModulo(index) {
+    const block = document.querySelector('[data-insumo-block="' + index + '"]');
+    if (!block) return;
+    const next = Array.from(block.querySelectorAll('[data-modulo-card]')).find(function(card){ return card.style.display === 'none'; });
+    if (!next) return;
+    next.style.display = '';
+    const chk = next.querySelector('input[data-modulo]');
+    if (chk) chk.checked = true;
+    recalc();
   }
 
 
@@ -910,21 +985,87 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     if (!select || !input) return;
     const costo = n(select.selectedOptions[0]?.dataset?.costo);
     if (costo > 0) {
-      input.value = costo.toFixed(2);
+      input.value = formatArsInput(costo);
     }
     recalc();
   }
 
 
+  function resetInsumoBlock(block, index) {
+    block.dataset.insumoBlock = String(index);
+    delete block.dataset.bound;
+    const legend = block.querySelector('legend');
+    if (legend) legend.textContent = 'Insumo ' + (Number(index) + 1);
+    block.querySelectorAll('[data-index]').forEach(function(el){ el.dataset.index = String(index); });
+    block.querySelectorAll('[id]').forEach(function(el){
+      el.id = el.id.replace(/_(\d+)$/, '_' + index);
+    });
+    block.querySelectorAll('[name]').forEach(function(el){
+      el.name = el.name.replace(/^(item_(?:modulo|pieza|alto|ancho|cant_pieza|rotable)_)(\d+)(_.*)$/, '$1' + index + '$3');
+    });
+    block.querySelectorAll('select').forEach(function(el){ el.selectedIndex = 0; if (el.classList.contains('tipo-insumo')) el.dataset.selected = ''; });
+    block.querySelectorAll('input').forEach(function(el){
+      if (el.classList.contains('confirmado-input')) el.value = '0';
+      else if (el.type === 'checkbox') el.checked = el.name.startsWith('item_rotable_');
+      else if (el.classList.contains('merma')) el.value = '10';
+      else if (el.classList.contains('rendimiento')) el.value = '1';
+      else if (el.classList.contains('ancho-tela')) el.value = '1.40';
+      else if (el.classList.contains('largo-placa')) el.value = '2.00';
+      else if (el.classList.contains('ancho-placa')) el.value = '1.00';
+      else if (el.classList.contains('espesor')) el.value = '30';
+      else if (el.type !== 'hidden') el.value = '0';
+      el.disabled = false;
+    });
+    const unidad = block.querySelector('.unidad');
+    if (unidad) unidad.value = 'm';
+    const parcial = block.querySelector('.parcial-insumo');
+    if (parcial) parcial.textContent = 'Estado: pendiente de confirmación.';
+    const alerta = block.querySelector('.flash');
+    if (alerta) { alerta.style.display = 'none'; alerta.textContent = ''; }
+    const confirmarBtn = block.querySelector('.btn-confirmar');
+    const editarBtn = block.querySelector('.btn-editar');
+    if (confirmarBtn) confirmarBtn.disabled = false;
+    if (editarBtn) editarBtn.disabled = true;
+  }
+
+  function agregarInsumo() {
+    const blocks = document.querySelectorAll('[data-insumo-block]');
+    const source = blocks[0];
+    const submitActions = document.getElementById('acciones-presupuesto-v2');
+    if (!source || !submitActions) return;
+    const index = blocks.length;
+    const clone = source.cloneNode(true);
+    resetInsumoBlock(clone, index);
+    submitActions.parentNode.insertBefore(clone, submitActions);
+    bindInsumoBlock(index);
+    fillTiposByCapa(index);
+    filterInsumos(index);
+    adaptCamposPorTipo(index);
+    applyModuleVisibility(index, true);
+    recalc();
+  }
+
+  function bindInsumoBlock(index) {
+    const block = document.querySelector('[data-insumo-block="' + index + '"]');
+    if (!block || block.dataset.bound === '1') return;
+    block.dataset.bound = '1';
+    block.querySelector('.btn-confirmar')?.addEventListener('click', function(){ confirmar(index); });
+    block.querySelector('.btn-editar')?.addEventListener('click', function(){ editar(index); });
+    block.querySelector('.btn-agregar-modulo')?.addEventListener('click', function(){ agregarModulo(index); });
+    block.querySelector('.modulos-details')?.addEventListener('toggle', function(e){ if (e.target.open) applyModuleVisibility(index, false); });
+    block.querySelector('.capa-select')?.addEventListener('change', function(){ fillTiposByCapa(index); filterInsumos(index); recalc(); });
+    block.querySelector('.tipo-insumo')?.addEventListener('change', function(){ filterInsumos(index); adaptCamposPorTipo(index); recalc(); });
+  }
+
   function renderResumenTecnico() {
     const host = document.getElementById('resumen_tecnico_v2');
     if (!host) return;
     const bloques = [];
-    for (let i = 0; i < 3; i++) {
+    getInsumoIndexes().forEach(function(i) {
       const capa = document.querySelector('.capa-select[data-index="' + i + '"]')?.value || '';
       const tipo = document.querySelector('.tipo-insumo[data-index="' + i + '"]')?.value || '';
       const insumo = document.querySelector('.insumo-selector[data-index="' + i + '"]')?.selectedOptions?.[0]?.textContent || '';
-      if (!capa || !tipo || !insumo || insumo === 'Seleccionar...') continue;
+      if (!capa || !tipo || !insumo || insumo === 'Seleccionar...') return;
       const modulos = [];
       document.querySelectorAll('input[data-index="' + i + '"][data-modulo]').forEach(function(m){
         if (!m.checked) return;
@@ -938,7 +1079,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         modulos.push({modulo, piezas});
       });
       bloques.push({capa, tipo, insumo, modulos});
-    }
+    });
     if (bloques.length === 0) {
       host.innerHTML = 'Sin datos aún.';
       return;
@@ -952,7 +1093,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
   function recalc() {
     let materiales = 0;
-    for (let i = 0; i < 3; i++) {
+    getInsumoIndexes().forEach(function(i) {
       const select = document.querySelector('.insumo-selector[data-index="' + i + '"]');
       const precioCatalogo = n(select?.selectedOptions[0]?.dataset?.precio);
       const precioManual = n(document.querySelector('.precio-manual[data-index="' + i + '"]')?.value);
@@ -1012,7 +1153,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         if (warning.length > 0) { alerta.style.display = 'block'; alerta.textContent = warning.join(' | '); }
         else { alerta.style.display = 'none'; alerta.textContent = ''; }
       }
-    }
+    });
 
     const manoObra = n(document.getElementById('mano_obra_v2')?.value);
     const margen = n(document.getElementById('margen_v2')?.value);
@@ -1036,14 +1177,16 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       alert('Hay alertas de corte pendientes. Corregí o ajustá piezas antes de guardar.');
     }
   });
-  document.querySelectorAll('.btn-confirmar').forEach(function(btn){ btn.addEventListener('click', function(){ confirmar(btn.dataset.index); }); });
-  document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
   document.getElementById('mano_obra_plantilla_v2')?.addEventListener('change', applyManoObraTemplate);
   document.getElementById('mueble_tipo_v2')?.addEventListener('change', function(){ applyMuebleDefaults(); recalc(); });
-  document.querySelectorAll('.capa-select').forEach(function(sel){ sel.addEventListener('change', function(){ fillTiposByCapa(sel.dataset.index); filterInsumos(sel.dataset.index); recalc(); }); });
-  document.querySelectorAll('.tipo-insumo').forEach(function(sel){ sel.addEventListener('change', function(){ filterInsumos(sel.dataset.index); adaptCamposPorTipo(sel.dataset.index); recalc(); }); });
-  for (let i=0;i<3;i++){ fillTiposByCapa(i); filterInsumos(i); adaptCamposPorTipo(i); }
-  if (!isEditingV2) applyMuebleDefaults();
+  document.getElementById('btn-agregar-insumo')?.addEventListener('click', agregarInsumo);
+  getInsumoIndexes().forEach(function(index){
+    bindInsumoBlock(index);
+    fillTiposByCapa(index);
+    filterInsumos(index);
+    adaptCamposPorTipo(index);
+    applyModuleVisibility(index, isEditingV2 ? false : true);
+  });
   recalc();
 })();
 </script>
