@@ -13,6 +13,43 @@ $modulos = ['asiento', 'respaldo', 'brazo_izq', 'brazo_der', 'base'];
 $piezas = ['frente', 'lateral', 'superior', 'inferior', 'trasera'];
 
 
+function infer_v2_insumo_categoria(array $insumo): string
+{
+    $categoria = trim((string) ($insumo['categoria'] ?? ''));
+    if ($categoria !== '') {
+        return $categoria;
+    }
+
+    $nombre = mb_strtolower((string) ($insumo['nombre'] ?? ''));
+    $unidad = mb_strtolower((string) ($insumo['unidad'] ?? ''));
+    $reglas = [
+        'tela' => ['tela', 'chenille', 'lino', 'cuero', 'ecocuero', 'pana'],
+        'gomaespuma' => ['gomaespuma', 'goma espuma', 'espuma', 'placa'],
+        'guata' => ['guata', 'vellon', 'vellón'],
+        'fliselina' => ['fliselina', 'friselina'],
+        'fleje' => ['fleje', 'cincha', 'elastico', 'elástico'],
+        'grapas' => ['grapa'],
+        'tachas' => ['tacha'],
+        'cierre' => ['cierre', 'cremallera'],
+        'adhesivo_contacto' => ['adhesivo', 'pegamento', 'cola', 'cemento'],
+    ];
+
+    foreach ($reglas as $tipo => $tokens) {
+        foreach ($tokens as $token) {
+            if ($token !== '' && str_contains($nombre, $token)) {
+                return $tipo;
+            }
+        }
+    }
+
+    if (in_array($unidad, ['m', 'metro', 'metros'], true)) {
+        return 'tela';
+    }
+
+    return 'otros';
+}
+
+
 function estimate_tela_base(array $modulosAplicados, float $anchoTela, string $unidad): float
 {
     if ($anchoTela <= 0) {
@@ -127,6 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $materiales = 0.0;
     $insumosById = [];
     foreach ($insumos as $insumo) {
+        $insumo['categoria_normalizada_v2'] = infer_v2_insumo_categoria($insumo);
         $insumosById[(int) ($insumo['id'] ?? 0)] = $insumo;
     }
 
@@ -236,14 +274,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-                $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
+        $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
         if ($tipoInsumo === 'tela' && $cantidadManual <= 0) {
             $telaBase = estimate_tela_base($modulosAplicados, $anchoTela, $unidad);
             if ($telaBase > 0) {
                 $cantidadBase = $telaBase;
             }
         }
-        if ((string) ($insumosById[$insumoId]['categoria'] ?? '') === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
+        if ((string) ($insumosById[$insumoId]['categoria_normalizada_v2'] ?? infer_v2_insumo_categoria($insumosById[$insumoId])) === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
             $cantidadBase = $areaPiezas / $separacionFleje;
         }
         if ($tipoInsumo === 'gomaespuma' && $largoPlaca > 0 && $anchoPlaca > 0 && $cantidadManual <= 0) {
@@ -545,7 +583,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
         <select name="item_insumo_id[]" class="insumo-selector" data-index="<?= $i ?>">
           <option value="">Seleccionar...</option>
           <?php foreach ($insumos as $insumo): ?>
-            <option value="<?= (int) $insumo['id'] ?>" <?= ((int) ($insumo['id'] ?? 0) === (int) ($editItem['insumo']['id'] ?? 0)) ? "selected" : "" ?> data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h((string) ($insumo['categoria'] ?? 'otros')) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
+            <option value="<?= (int) $insumo['id'] ?>" <?= ((int) ($insumo['id'] ?? 0) === (int) ($editItem['insumo']['id'] ?? 0)) ? "selected" : "" ?> data-precio="<?= (float) ($insumo['precio'] ?? 0) ?>" data-unidad="<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>" data-categoria="<?= h(infer_v2_insumo_categoria($insumo)) ?>"><?= h((string) $insumo['nombre']) ?> (<?= h((string) ($insumo['unidad'] ?? 'unidad')) ?>)</option>
           <?php endforeach; ?>
         </select>
       </label>
