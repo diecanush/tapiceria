@@ -470,3 +470,153 @@ textarea[title] {
     min-width: 220px;
   }
 }
+
+.insumos-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.insumos-toolbar > button {
+  width: auto;
+  min-width: 160px;
+}
+.insumos-filtros {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-left: auto;
+}
+.insumos-filtros label {
+  min-width: 180px;
+}
+.insumos-table {
+  table-layout: fixed;
+}
+.insumos-table .insumos-col-id { width: 52px; }
+.insumos-table .insumos-col-categoria { width: 130px; }
+.insumos-table .insumos-col-unidad { width: 82px; }
+.insumos-table .insumos-col-precio { width: 128px; }
+.insumos-table .insumos-col-stock { width: 88px; }
+.insumos-table .insumos-col-minimo { width: 88px; }
+.insumos-table .insumos-col-estado { width: 76px; }
+.insumos-table .insumos-col-acciones { width: 168px; }
+.insumos-table th,
+.insumos-table td {
+  white-space: normal;
+}
+.insumos-table td:nth-child(2) input {
+  min-width: 240px;
+}
+.insumos-table td:nth-child(4) input,
+.insumos-table td:nth-child(5) input,
+.insumos-table td:nth-child(6) input,
+.insumos-table td:nth-child(7) input {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+@media (max-width: 768px) {
+  .insumos-toolbar,
+  .insumos-filtros {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .insumos-toolbar > button,
+  .insumos-filtros label {
+    width: 100%;
+    min-width: 0;
+  }
+  .insumos-filtros {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+.config-capas-fieldset {
+  grid-column: 1 / -1;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+}
+.config-capas-fieldset legend {
+  padding: 0 6px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.config-capas-head,
+.config-capas-row {
+  grid-template-columns: minmax(180px, 1fr) minmax(280px, 2fr);
+}
+.config-capas-row {
+  margin-top: 6px;
+  gap: 8px;
+}
+.config-input-parent {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.config-input-child {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.config-input-mueble {
+  border-left: 5px solid #2563eb;
+}
+.config-input-modulos {
+  border-left: 5px solid #16a34a;
+}
+.config-input-capa {
+  border-left: 5px solid #7c3aed;
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+.config-input-tipos {
+  border-left: 5px solid #f97316;
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+.config-add-row {
+  width: auto;
+  margin-top: 10px;
+}
+.config-muebles-fieldset .config-capas-head strong:first-child {
+  color: #1d4ed8;
+}
+.config-muebles-fieldset .config-capas-head strong:last-child {
+  color: #15803d;
+}
+.config-capas-insumos-fieldset .config-capas-head strong:first-child {
+  color: #6d28d9;
+}
+.config-capas-insumos-fieldset .config-capas-head strong:last-child {
+  color: #c2410c;
+}
+
+@media (max-width: 768px) {
+  .config-capas-head,
+  .config-capas-row {
+    grid-template-columns: 1fr;
+  }
+  .config-capas-head {
+    display: none;
+  }
+  .config-add-row {
+    width: 100%;
+  }
+}
+
+.insumos-table .insumo-nombre-input {
+  transition: min-width .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.insumos-table .insumo-nombre-input:hover,
+.insumos-table .insumo-nombre-input:focus {
+  min-width: min(560px, 70vw);
+  position: relative;
+  z-index: 5;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+}

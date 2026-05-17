@@ -59,9 +59,9 @@ render_page_start('Configuración capas/insumos');
     <input type="text" name="version" value="<?= h((string) ($config['version'] ?? '1.0')) ?>">
   </label>
 
-  <fieldset style="grid-column:1 / -1;">
+  <fieldset class="config-capas-fieldset config-muebles-fieldset">
     <legend>Muebles y módulos por defecto</legend>
-    <div class="piece-grid-head" style="grid-template-columns:1fr 2fr;">
+    <div class="piece-grid-head config-capas-head">
       <strong>Tipo de mueble</strong>
       <strong>Módulos (coma separados)</strong>
     </div>
@@ -72,16 +72,17 @@ render_page_start('Configuración capas/insumos');
         $key = (string) ($muebleKeys[$i] ?? '');
         $mods = $key !== '' ? implode(', ', (array) ($muebles[$key]['modulos_default'] ?? [])) : '';
     ?>
-      <div class="piece-grid" style="grid-template-columns:1fr 2fr; margin-top:6px;">
-        <input type="text" name="mueble_key[]" value="<?= h($key) ?>" placeholder="ej: sillon_2_cuerpos">
-        <input type="text" name="mueble_modulos[]" value="<?= h($mods) ?>" placeholder="asiento, respaldo, base">
+      <div class="piece-grid config-capas-row config-mueble-row">
+        <input class="config-input-parent config-input-mueble" type="text" name="mueble_key[]" value="<?= h($key) ?>" placeholder="ej: sillon_2_cuerpos" aria-label="Tipo de mueble">
+        <input class="config-input-child config-input-modulos" type="text" name="mueble_modulos[]" value="<?= h($mods) ?>" placeholder="asiento, respaldo, base" aria-label="Módulos del mueble">
       </div>
     <?php endfor; ?>
+    <button type="button" class="secondary-btn config-add-row" data-config-target="mueble">Agregar mueble</button>
   </fieldset>
 
-  <fieldset style="grid-column:1 / -1;">
+  <fieldset class="config-capas-fieldset config-capas-insumos-fieldset">
     <legend>Capas y tipos de insumo permitidos</legend>
-    <div class="piece-grid-head" style="grid-template-columns:1fr 2fr;">
+    <div class="piece-grid-head config-capas-head">
       <strong>Capa</strong>
       <strong>Tipos permitidos (coma separados)</strong>
     </div>
@@ -92,14 +93,39 @@ render_page_start('Configuración capas/insumos');
         $key = (string) ($capaKeys[$i] ?? '');
         $tipos = $key !== '' ? implode(', ', (array) ($capas[$key]['tipos_insumo_permitidos'] ?? [])) : '';
     ?>
-      <div class="piece-grid" style="grid-template-columns:1fr 2fr; margin-top:6px;">
-        <input type="text" name="capa_key[]" value="<?= h($key) ?>" placeholder="ej: cobertura">
-        <input type="text" name="capa_tipos[]" value="<?= h($tipos) ?>" placeholder="tela, cierre, guata">
+      <div class="piece-grid config-capas-row config-capa-row">
+        <input class="config-input-parent config-input-capa" type="text" name="capa_key[]" value="<?= h($key) ?>" placeholder="ej: cobertura" aria-label="Capa">
+        <input class="config-input-child config-input-tipos" type="text" name="capa_tipos[]" value="<?= h($tipos) ?>" placeholder="tela, cierre, guata" aria-label="Tipos de insumo permitidos">
       </div>
     <?php endfor; ?>
+    <button type="button" class="secondary-btn config-add-row" data-config-target="capa">Agregar capa</button>
   </fieldset>
 
   <div><button type="submit">Guardar configuración</button></div>
 </form>
+
+<script>
+(function () {
+  function addConfigRow(target) {
+    const rowClass = target === 'mueble' ? '.config-mueble-row' : '.config-capa-row';
+    const button = document.querySelector('[data-config-target="' + target + '"]');
+    const source = document.querySelector(rowClass);
+    if (!button || !source) return;
+
+    const clone = source.cloneNode(true);
+    clone.querySelectorAll('input').forEach(function(input) {
+      input.value = '';
+    });
+    button.parentNode.insertBefore(clone, button);
+    clone.querySelector('input')?.focus();
+  }
+
+  document.querySelectorAll('.config-add-row').forEach(function(button) {
+    button.addEventListener('click', function() {
+      addConfigRow(button.dataset.configTarget || 'mueble');
+    });
+  });
+})();
+</script>
 
 <?php render_page_end();
