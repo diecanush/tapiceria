@@ -534,3 +534,77 @@ textarea[title] {
     width: 100%;
   }
 }
+
+.config-capas-fieldset {
+  grid-column: 1 / -1;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+}
+.config-capas-fieldset legend {
+  padding: 0 6px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.config-capas-head,
+.config-capas-row {
+  grid-template-columns: minmax(180px, 1fr) minmax(280px, 2fr);
+}
+.config-capas-row {
+  margin-top: 6px;
+  gap: 8px;
+}
+.config-input-parent {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.config-input-child {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.config-input-mueble {
+  border-left: 5px solid #2563eb;
+}
+.config-input-modulos {
+  border-left: 5px solid #16a34a;
+}
+.config-input-capa {
+  border-left: 5px solid #7c3aed;
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+.config-input-tipos {
+  border-left: 5px solid #f97316;
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+.config-add-row {
+  width: auto;
+  margin-top: 10px;
+}
+.config-muebles-fieldset .config-capas-head strong:first-child {
+  color: #1d4ed8;
+}
+.config-muebles-fieldset .config-capas-head strong:last-child {
+  color: #15803d;
+}
+.config-capas-insumos-fieldset .config-capas-head strong:first-child {
+  color: #6d28d9;
+}
+.config-capas-insumos-fieldset .config-capas-head strong:last-child {
+  color: #c2410c;
+}
+
+@media (max-width: 768px) {
+  .config-capas-head,
+  .config-capas-row {
+    grid-template-columns: 1fr;
+  }
+  .config-capas-head {
+    display: none;
+  }
+  .config-add-row {
+    width: 100%;
+  }
+}
