@@ -713,17 +713,17 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
           <option value="cm" <?= ((string) ($editItem['parametros_calculo']['unidad_carga'] ?? "m") === "cm") ? "selected" : "" ?>>Centímetros</option>
         </select>
       </label>
-      <label data-tipo-field="tela gomaespuma guata fliselina">Ancho útil tela/placa (m)
+      <label data-tipo-field="tela guata">Ancho útil tela/guata (m)
         <input type="number" name="item_ancho_tela[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['ancho_tela'] ?? 1.40) ?>" class="ancho-tela" data-index="<?= $i ?>">
       </label>
-      <label>Precio unitario (opcional)
+      <label>Precio unitario (stock o manual)
         <input type="text" name="item_precio_manual[]" inputmode="decimal" value="<?= format_ars_input((float) ($editItem['insumo']['costo_unitario'] ?? 0)) ?>" class="precio-manual precio-ars" data-index="<?= $i ?>" placeholder="Ej: 12.500,50">
       </label>
       <label data-tipo-field="fleje">Separación fleje (m)
         <input type="number" name="item_separacion_fleje[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['separacion_fleje'] ?? 0) ?>" class="separacion-fleje" data-index="<?= $i ?>" placeholder="Solo para fleje">
       </label>
 
-      <label data-tipo-field="gomaespuma">Largo placa (m)
+      <label data-tipo-field="gomaespuma">Alto placa (m)
         <input type="number" name="item_largo_placa[]" step="0.01" min="0" value="<?= (float) ($editItem['parametros_calculo']['largo_placa'] ?? 2.00) ?>" class="largo-placa" data-index="<?= $i ?>">
       </label>
       <label data-tipo-field="gomaespuma">Ancho placa (m)
@@ -876,6 +876,17 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       op.hidden = tipo !== '' && op.dataset.categoria !== tipo;
     });
     if (insSel.selectedOptions[0] && insSel.selectedOptions[0].hidden) insSel.value = '';
+    updatePrecioFromStock(index);
+  }
+
+  function updatePrecioFromStock(index, force) {
+    const insSel = document.querySelector('.insumo-selector[data-index="' + index + '"]');
+    const precioInput = document.querySelector('.precio-manual[data-index="' + index + '"]');
+    if (!insSel || !precioInput) return;
+    const precioCatalogo = n(insSel.selectedOptions[0]?.dataset?.precio);
+    precioInput.placeholder = precioCatalogo > 0 ? 'Precio de stock: ' + formatArsInput(precioCatalogo) : 'Cargar precio unitario';
+    if (!force && precioInput.value.trim() !== '') return;
+    precioInput.value = precioCatalogo > 0 ? formatArsInput(precioCatalogo) : '';
   }
 
 
@@ -1013,6 +1024,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       else if (el.classList.contains('largo-placa')) el.value = '2.00';
       else if (el.classList.contains('ancho-placa')) el.value = '1.00';
       else if (el.classList.contains('espesor')) el.value = '30';
+      else if (el.classList.contains('precio-manual')) el.value = '';
       else if (el.type !== 'hidden') el.value = '0';
       el.disabled = false;
     });
@@ -1055,6 +1067,7 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
     block.querySelector('.modulos-details')?.addEventListener('toggle', function(e){ if (e.target.open) applyModuleVisibility(index, false); });
     block.querySelector('.capa-select')?.addEventListener('change', function(){ fillTiposByCapa(index); filterInsumos(index); recalc(); });
     block.querySelector('.tipo-insumo')?.addEventListener('change', function(){ filterInsumos(index); adaptCamposPorTipo(index); recalc(); });
+    block.querySelector('.insumo-selector')?.addEventListener('change', function(){ updatePrecioFromStock(index, true); recalc(); });
   }
 
   function renderResumenTecnico() {
@@ -1123,21 +1136,23 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       const finalCant = (base * (1 + merma / 100)) / rendimiento;
       
       const warning = [];
-      document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el) {
-        if (!el.name || !el.name.includes('item_ancho_')) return;
-        const suf = el.name.replace('item_ancho_', '');
-        const anchoP = n(el.value);
-        const altoP = n(document.querySelector('[name="item_alto_' + suf + '"]')?.value);
-        const usada = !!document.querySelector('[name="item_pieza_' + suf + '"]')?.checked;
-        const rotable = !!document.querySelector('[name="item_rotable_' + suf + '"]')?.checked;
-        if (!usada || anchoTela <= 0) return;
-        let aw = anchoP;
-        let ah = altoP;
-        if (unidad === 'cm') { aw = aw / 100; ah = ah / 100; }
-        if (aw > anchoTela && (!rotable || ah > anchoTela)) {
-          warning.push('ALERTA: Pieza ' + suf.split('_').slice(-1)[0] + ' supera ancho útil (' + aw.toFixed(2) + 'm > ' + anchoTela.toFixed(2) + 'm). Sugerencia: dividir en paños.');
-        }
-      });
+      if (tipo === 'tela') {
+        document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el) {
+          if (!el.name || !el.name.includes('item_ancho_')) return;
+          const suf = el.name.replace('item_ancho_', '');
+          const anchoP = n(el.value);
+          const altoP = n(document.querySelector('[name="item_alto_' + suf + '"]')?.value);
+          const usada = !!document.querySelector('[name="item_pieza_' + suf + '"]')?.checked;
+          const rotable = !!document.querySelector('[name="item_rotable_' + suf + '"]')?.checked;
+          if (!usada || anchoTela <= 0) return;
+          let aw = anchoP;
+          let ah = altoP;
+          if (unidad === 'cm') { aw = aw / 100; ah = ah / 100; }
+          if (aw > anchoTela && (!rotable || ah > anchoTela)) {
+            warning.push('ALERTA: Pieza ' + suf.split('_').slice(-1)[0] + ' supera ancho útil (' + aw.toFixed(2) + 'm > ' + anchoTela.toFixed(2) + 'm). Sugerencia: dividir en paños.');
+          }
+        });
+      }
 
       const subtotal = finalCant * precio;
       if (base > 0 && precio >= 0) materiales += subtotal;
