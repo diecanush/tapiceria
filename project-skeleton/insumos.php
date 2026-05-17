@@ -185,7 +185,7 @@ render_page_start('Insumos');
           <?= (int) $insumo['id'] ?>
           <input type="hidden" name="id" value="<?= (int) $insumo['id'] ?>">
         </td>
-        <td><input type="text" name="nombre" value="<?= h((string) $insumo['nombre']) ?>" required></td>
+        <td><input class="insumo-nombre-input" type="text" name="nombre" value="<?= h((string) $insumo['nombre']) ?>" title="<?= h((string) $insumo['nombre']) ?>" required></td>
         <td>
           <select name="categoria">
             <?php foreach ($categorias as $categoria): ?>
