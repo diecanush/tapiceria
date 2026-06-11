@@ -151,7 +151,15 @@ render_page_start('Presupuestos por muebles');
 <?php if ($viewing !== null): ?>
 <section class="card">
   <h3>Presupuesto #<?= (int) ($viewing['id'] ?? 0) ?></h3>
-  <p><?= h((string) ($viewing['detalle'] ?? '')) ?> · <?= h((string) ($viewing['fecha'] ?? '')) ?> · <strong><?= money((float) ($viewing['total'] ?? 0)) ?></strong></p>
+  <?php
+  $viewLabor = (float) ($viewing['mano_obra'] ?? 0);
+  $viewMaterials = (float) ($viewing['materiales'] ?? 0);
+  $viewSubtotal = $viewLabor + $viewMaterials;
+  $viewMarginPercent = (float) ($viewing['margen'] ?? 0);
+  $viewMarginAmount = (float) ($viewing['total'] ?? 0) - $viewSubtotal;
+  ?>
+  <p><?= h((string) ($viewing['detalle'] ?? '')) ?> · <?= h((string) ($viewing['fecha'] ?? '')) ?></p>
+  <p><strong>Mano de obra:</strong> <?= money($viewLabor) ?> · <strong>Materiales:</strong> <?= money($viewMaterials) ?> · <strong>Subtotal:</strong> <?= money($viewSubtotal) ?> · <strong>Margen (<?= h((string) $viewMarginPercent) ?>%):</strong> <?= money($viewMarginAmount) ?> · <strong>Total:</strong> <?= money((float) ($viewing['total'] ?? 0)) ?></p>
   <?php foreach ((array) ($viewing['items'] ?? []) as $item): ?>
     <details open><summary><?= h((string) ($item['tipo_mueble'] ?? 'Mueble')) ?> × <?= (int) ($item['cantidad'] ?? 1) ?> · <?= money((float) ($item['subtotal_total'] ?? 0)) ?></summary>
     <?php foreach ((array) ($item['modulos'] ?? []) as $module): ?><div style="margin-left:16px"><strong><?= h((string) ($module['tipo'] ?? 'Módulo')) ?></strong>: <?= (float) ($module['alto'] ?? 0) ?> × <?= (float) ($module['ancho'] ?? 0) ?> × <?= (float) ($module['profundidad'] ?? 0) ?> cm</div><?php endforeach; ?>
@@ -248,7 +256,7 @@ function bind(){
  document.querySelectorAll('[data-layer]').forEach(n=>{const[ii,mi,li]=indexes(n),l=state.items[ii].modulos[mi].capas[li];$('.remove-layer',n).onclick=()=>{state.items[ii].modulos[mi].capas.splice(li,1);draw()};$('.layer-type',n).onchange=e=>l.tipo=e.target.value;$('.add-input',n).onclick=()=>openModal(ii,mi,li,-1)});
  document.querySelectorAll('[data-input]').forEach(n=>{const[ii,mi,li,xi]=indexes(n);$('.edit-input',n).onclick=()=>openModal(ii,mi,li,xi);$('.remove-input',n).onclick=()=>{state.items[ii].modulos[mi].capas[li].insumos.splice(xi,1);draw()}});
 }
-function summary(){let work=0,materials=0;(state.items||[]).forEach(i=>{const q=Math.max(1,Number(i.cantidad||1));work+=Number(i.mano_obra_unitaria||0)*q;(i.modulos||[]).forEach(m=>(m.capas||[]).forEach(l=>(l.insumos||[]).forEach(x=>materials+=Number(x.costo_unitario_total||0)*q)))});$('#summary').textContent=`Mano de obra: ${money(work)} · Materiales: ${money(materials)} · Total estimado: ${money((work+materials)*(1+Number(state.margen||0)/100))}`}
+function summary(){let work=0,materials=0;(state.items||[]).forEach(i=>{const q=Math.max(1,Number(i.cantidad||1));work+=Number(i.mano_obra_unitaria||0)*q;(i.modulos||[]).forEach(m=>(m.capas||[]).forEach(l=>(l.insumos||[]).forEach(x=>materials+=Number(x.costo_unitario_total||0)*q)))});const subtotal=work+materials,marginPercent=Math.max(0,Number(state.margen||0)),marginAmount=subtotal*marginPercent/100,total=subtotal+marginAmount;$('#summary').textContent=`Mano de obra: ${money(work)} · Materiales: ${money(materials)} · Subtotal: ${money(subtotal)} · Margen (${marginPercent}%): ${money(marginAmount)} · Total estimado: ${money(total)}`}
 function pieceRow(p={}){const r=document.createElement('div');r.className='piece-row';r.innerHTML=`<input class="p-name" placeholder="Pieza" value="${esc(p.pieza||'')}"><input class="p-h" type="number" min="0" placeholder="Alto cm" value="${Number(p.alto||0)}"><input class="p-w" type="number" min="0" placeholder="Ancho cm" value="${Number(p.ancho||0)}"><input class="p-q" type="number" min="1" value="${Number(p.cantidad||1)}"><button type="button" class="danger-btn">×</button>`;$('button',r).onclick=()=>r.remove();return r}
 function filterSupplies(selectedId=''){const type=$('#mi-type').value,select=$('#mi-supply');[...select.options].forEach(option=>{if(!option.value)return;option.hidden=option.dataset.category!==type});const selected=[...select.options].find(option=>option.value===String(selectedId)&&!option.hidden);select.value=selected?selected.value:'';if(!select.value)$('#mi-cost').value=''}
 function fields(selectedId=''){const type=$('#mi-type').value;document.querySelectorAll('[data-for]').forEach(x=>x.style.display=x.dataset.for.split(' ').includes(type)?'':'none');$('#direction-label').style.display=type==='fleje'&&$('#mi-pattern').value==='lineal'?'':'none';$('#pieces-section').style.display=['tela','gomaespuma','guata','fliselina','cierre','cordon'].includes(type)?'':'none';filterSupplies(selectedId);previewCalculation()}
