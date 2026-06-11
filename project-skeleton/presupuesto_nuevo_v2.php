@@ -52,7 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($_POST['action'] ?? 'save');
     $id = (int) ($_POST['id'] ?? 0);
     if ($action === 'delete') {
-        $presupuestos = array_values(array_filter($presupuestos, static fn(array $row): bool => (int) ($row['id'] ?? 0) !== $id));
+        $presupuestos = array_values(array_filter($presupuestos, static function (array $row) use ($id): bool {
+            return (int) ($row['id'] ?? 0) !== $id;
+        }));
         write_json(data_file('presupuestos'), $presupuestos);
         redirect_with_message('presupuesto_nuevo_v2.php', 'Presupuesto eliminado.');
     }
@@ -103,7 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect_with_message('presupuesto_nuevo_v2.php?editar_v2=' . $payload['id'], $action === 'finalize' ? 'Presupuesto finalizado.' : 'Borrador guardado.');
 }
 
-$budgets = array_values(array_filter($presupuestos, static fn(array $row): bool => isset($row['items']) || isset($row['estructura_insumos_v2'])));
+$budgets = array_values(array_filter($presupuestos, static function (array $row): bool {
+    return isset($row['items']) || isset($row['estructura_insumos_v2']);
+}));
 $editId = (int) ($_GET['editar_v2'] ?? 0);
 $viewId = (int) ($_GET['ver_v2'] ?? 0);
 $editing = budget_find($budgets, $editId);
