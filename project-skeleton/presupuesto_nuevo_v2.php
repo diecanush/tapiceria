@@ -9,6 +9,10 @@ $insumos = read_json(data_file('insumos'));
 $manoObraValores = read_json(data_file('mano_obra_valores'));
 $presupuestos = read_json(data_file('presupuestos'));
 $configCapas = read_json(data_file('config_capas_insumos'));
+$clientNames = [];
+foreach ($clientes as $client) {
+    $clientNames[(int) ($client['id'] ?? 0)] = (string) ($client['nombre'] ?? '');
+}
 
 function budget_supply_category(array $supply): string
 {
@@ -140,6 +144,7 @@ render_page_start('Presupuestos por muebles');
 .summary-card{position:sticky;bottom:8px;z-index:5;background:#fff;box-shadow:0 4px 18px #0002}
 .modal-bg{display:none;position:fixed;inset:0;background:#0008;z-index:30;align-items:center;justify-content:center}.modal-bg.open{display:flex}
 .modal-card{background:#fff;width:min(900px,94vw);max-height:92vh;overflow:auto;padding:18px;border-radius:8px}.piece-head,.piece-row{display:grid;grid-template-columns:1fr repeat(3,110px) 42px;gap:7px;margin:6px 0}.piece-head{font-size:12px;font-weight:700;color:#56616f}.calculation-preview{margin:12px 0;padding:12px;border:1px solid #b9c9dc;border-radius:6px;background:#f4f8fc;font-weight:700}
+.budget-history-wrap{overflow-x:auto}.budget-history{min-width:940px}.budget-history th,.budget-history td{white-space:nowrap}.budget-history .history-description{white-space:normal;min-width:150px}.budget-history .history-actions{display:flex;flex-wrap:nowrap;gap:5px;align-items:center}.budget-history .history-actions .action-link,.budget-history .history-actions button{width:auto;margin:0;padding:6px 8px;line-height:1.2}.budget-history .history-actions .danger-btn{margin-left:0}
 @media(max-width:800px){.budget-grid,.item-grid,.module-grid,.insumo-row,.piece-row{grid-template-columns:1fr 1fr}}
 </style>
 
@@ -157,12 +162,18 @@ render_page_start('Presupuestos por muebles');
 
 <section class="card">
   <h3>Historial</h3>
-  <table class="table"><thead><tr><th>ID</th><th>Fecha</th><th>Descripción</th><th>Estado</th><th>Total</th><th>Acciones</th></tr></thead><tbody>
+  <div class="budget-history-wrap">
+  <table class="table budget-history"><thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Descripción</th><th>Estado</th><th>Total</th><th>Acciones</th></tr></thead><tbody>
   <?php foreach (array_slice(array_reverse($budgets), 0, 12) as $row): ?>
-    <tr><td>#<?= (int) ($row['id'] ?? 0) ?></td><td><?= h((string) ($row['fecha'] ?? '')) ?></td><td><?= h((string) ($row['detalle'] ?? '')) ?></td><td><?= h((string) ($row['estado'] ?? 'borrador')) ?></td><td><?= money((float) ($row['total'] ?? 0)) ?></td>
-    <td><form method="post" class="inline-actions"><input type="hidden" name="id" value="<?= (int) ($row['id'] ?? 0) ?>"><a class="secondary-btn action-link" href="?ver_v2=<?= (int) ($row['id'] ?? 0) ?>">Detalle</a><a class="secondary-btn action-link" href="?editar_v2=<?= (int) ($row['id'] ?? 0) ?>">Editar</a><button class="secondary-btn" name="action" value="duplicate">Duplicar</button><button class="danger-btn" name="action" value="delete" onclick="return confirm('¿Eliminar presupuesto?')">Eliminar</button></form></td></tr>
+    <?php
+    $clientId = (int) ($row['cliente_id'] ?? 0);
+    $clientName = $clientNames[$clientId] ?? ($clientId > 0 ? 'Cliente #' . $clientId : 'Sin cliente');
+    ?>
+    <tr><td>#<?= (int) ($row['id'] ?? 0) ?></td><td><?= h((string) ($row['fecha'] ?? '')) ?></td><td><?= h($clientName) ?></td><td class="history-description"><?= h((string) ($row['detalle'] ?? '')) ?></td><td><?= h((string) ($row['estado'] ?? 'borrador')) ?></td><td><?= money((float) ($row['total'] ?? 0)) ?></td>
+    <td><form method="post" class="history-actions"><input type="hidden" name="id" value="<?= (int) ($row['id'] ?? 0) ?>"><a class="secondary-btn action-link" href="?ver_v2=<?= (int) ($row['id'] ?? 0) ?>">Detalle</a><a class="secondary-btn action-link" href="?editar_v2=<?= (int) ($row['id'] ?? 0) ?>">Editar</a><button class="secondary-btn" name="action" value="duplicate">Duplicar</button><button class="danger-btn" name="action" value="delete" onclick="return confirm('¿Eliminar presupuesto?')">Eliminar</button></form></td></tr>
   <?php endforeach; ?>
   </tbody></table>
+  </div>
 </section>
 
 <form method="post" id="budget-form">
