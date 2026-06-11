@@ -361,14 +361,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-        $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
-        if ($tipoInsumo === 'tela' && $cantidadManual <= 0) {
-            $telaBase = estimate_tela_base($modulosAplicados, $anchoTela, $unidad);
-            if ($telaBase > 0) {
-                $cantidadBase = $telaBase;
-            }
-        }
-        if ((string) ($insumosById[$insumoId]['categoria_normalizada_v2'] ?? infer_v2_insumo_categoria($insumosById[$insumoId])) === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
+                $cantidadBase = $cantidadManual > 0 ? $cantidadManual : $areaPiezas;
+        if ((string) ($insumosById[$insumoId]['categoria'] ?? '') === 'fleje' && $separacionFleje > 0 && $cantidadManual <= 0) {
             $cantidadBase = $areaPiezas / $separacionFleje;
         }
         if ($tipoInsumo === 'gomaespuma' && $largoPlaca > 0 && $anchoPlaca > 0 && $cantidadManual <= 0) {
@@ -1136,23 +1130,21 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
       const finalCant = (base * (1 + merma / 100)) / rendimiento;
       
       const warning = [];
-      if (tipo === 'tela') {
-        document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el) {
-          if (!el.name || !el.name.includes('item_ancho_')) return;
-          const suf = el.name.replace('item_ancho_', '');
-          const anchoP = n(el.value);
-          const altoP = n(document.querySelector('[name="item_alto_' + suf + '"]')?.value);
-          const usada = !!document.querySelector('[name="item_pieza_' + suf + '"]')?.checked;
-          const rotable = !!document.querySelector('[name="item_rotable_' + suf + '"]')?.checked;
-          if (!usada || anchoTela <= 0) return;
-          let aw = anchoP;
-          let ah = altoP;
-          if (unidad === 'cm') { aw = aw / 100; ah = ah / 100; }
-          if (aw > anchoTela && (!rotable || ah > anchoTela)) {
-            warning.push('ALERTA: Pieza ' + suf.split('_').slice(-1)[0] + ' supera ancho útil (' + aw.toFixed(2) + 'm > ' + anchoTela.toFixed(2) + 'm). Sugerencia: dividir en paños.');
-          }
-        });
-      }
+      document.querySelectorAll('[data-index="' + i + '"]').forEach(function(el) {
+        if (!el.name || !el.name.includes('item_ancho_')) return;
+        const suf = el.name.replace('item_ancho_', '');
+        const anchoP = n(el.value);
+        const altoP = n(document.querySelector('[name="item_alto_' + suf + '"]')?.value);
+        const usada = !!document.querySelector('[name="item_pieza_' + suf + '"]')?.checked;
+        const rotable = !!document.querySelector('[name="item_rotable_' + suf + '"]')?.checked;
+        if (!usada || anchoTela <= 0) return;
+        let aw = anchoP;
+        let ah = altoP;
+        if (unidad === 'cm') { aw = aw / 100; ah = ah / 100; }
+        if (aw > anchoTela && (!rotable || ah > anchoTela)) {
+          warning.push('ALERTA: Pieza ' + suf.split('_').slice(-1)[0] + ' supera ancho útil (' + aw.toFixed(2) + 'm > ' + anchoTela.toFixed(2) + 'm). Sugerencia: dividir en paños.');
+        }
+      });
 
       const subtotal = finalCant * precio;
       if (base > 0 && precio >= 0) materiales += subtotal;
@@ -1182,17 +1174,14 @@ render_page_start('Presupuesto nuevo (V2 por insumo)');
 
   document.getElementById('v2-form')?.addEventListener('input', recalc);
   document.getElementById('v2-form')?.addEventListener('submit', function(e){
-    document.querySelectorAll('#v2-form [disabled]').forEach(function(el){
-      if (el.classList.contains('btn-editar') || el.classList.contains('btn-confirmar')) return;
-      el.disabled = false;
-    });
     const alerts = Array.from(document.querySelectorAll('[id^=alerta_]')).filter(function(a){ return a.style.display !== 'none' && a.textContent.trim() !== ''; });
     if (alerts.length > 0) {
       e.preventDefault();
       alert('Hay alertas de corte pendientes. Corregí o ajustá piezas antes de guardar.');
     }
   });
-  document.getElementById('mano_obra_plantilla_v2')?.addEventListener('change', applyManoObraTemplate);
+  document.querySelectorAll('.btn-confirmar').forEach(function(btn){ btn.addEventListener('click', function(){ confirmar(btn.dataset.index); }); });
+  document.querySelectorAll('.btn-editar').forEach(function(btn){ btn.addEventListener('click', function(){ editar(btn.dataset.index); }); });
   document.getElementById('mueble_tipo_v2')?.addEventListener('change', function(){ applyMuebleDefaults(); recalc(); });
   document.getElementById('btn-agregar-insumo')?.addEventListener('click', agregarInsumo);
   getInsumoIndexes().forEach(function(index){
