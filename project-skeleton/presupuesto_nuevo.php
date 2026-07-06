@@ -97,12 +97,12 @@ function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesBy
     if ($standalone) {
         echo '<div class="inline-actions">';
         echo '<button type="button" onclick="window.print()">Imprimir detalle</button>';
-        echo '<a href="presupuesto_nuevo.php?ver=' . (int) ($presupuestoDetalle['id'] ?? 0) . '#presupuesto-' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Editar presupuesto</a>';
+        echo '<a href="presupuesto_nuevo.php?editar=' . (int) ($presupuestoDetalle['id'] ?? 0) . '#presupuesto-' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Editar presupuesto</a>';
         echo '<a href="presupuesto_nuevo.php?ver=' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Volver</a>';
         echo '</div>';
     } else {
         echo '<div class="inline-actions">';
-        echo '<a href="#presupuesto-' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Editar presupuesto</a>';
+        echo '<a href="presupuesto_nuevo.php?editar=' . (int) ($presupuestoDetalle['id'] ?? 0) . '#presupuesto-' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Editar presupuesto</a>';
         echo '<a href="presupuesto_nuevo.php" class="secondary-btn action-link">Nuevo presupuesto</a>';
         echo '</div>';
     }
@@ -328,8 +328,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $base = $subtotal + $recargo;
     $total = $base;
 
-    $presupuestos[] = [
-        'id' => next_id($presupuestos),
+    $fullEditId = $action === 'update_full' ? (int) ($_POST['id'] ?? 0) : 0;
+    $existingFull = $fullEditId > 0 ? find_presupuesto_by_id($presupuestos, $fullEditId) : null;
+    $presupuestoPayload = [
+        'id' => $existingFull !== null ? $fullEditId : next_id($presupuestos),
         'cliente_id' => $clienteId,
         'detalle' => $detalle,
         'mueble_tipo' => $muebleTipo === '' ? 'personalizado' : $muebleTipo,
@@ -340,9 +342,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'margen' => $margen,
         'impuesto' => $impuesto,
         'total' => round($total, 2),
-        'estado' => 'borrador',
-        'fecha' => date('Y-m-d'),
+        'estado' => (string) ($existingFull['estado'] ?? 'borrador'),
+        'fecha' => (string) ($existingFull['fecha'] ?? date('Y-m-d')),
     ];
+
+    if ($existingFull !== null) {
+        foreach ($presupuestos as &$presupuesto) {
+            if ((int) ($presupuesto['id'] ?? 0) === $fullEditId) {
+                $presupuesto = $presupuestoPayload;
+                break;
+            }
+        }
+        unset($presupuesto);
+        write_json(data_file('presupuestos'), $presupuestos);
+        redirect_with_message('presupuesto_nuevo.php?editar=' . $fullEditId, 'Presupuesto actualizado correctamente.');
+    }
+
+    $presupuestos[] = $presupuestoPayload;
 
     write_json(data_file('presupuestos'), $presupuestos);
     redirect_with_message('presupuesto_nuevo.php', 'Presupuesto creado en estado borrador.');
@@ -351,6 +367,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $verPresupuestoId = (int) ($_GET['ver'] ?? 0);
 $presupuestoDetalle = $verPresupuestoId > 0 ? find_presupuesto_by_id($presupuestos, $verPresupuestoId) : null;
 $soloDetalle = (($_GET['solo_detalle'] ?? '') === '1');
+$editarCompletoId = (int) ($_GET['editar'] ?? 0);
+$presupuestoForm = $editarCompletoId > 0 ? find_presupuesto_by_id($presupuestos, $editarCompletoId) : null;
 
 $filtroCliente = (int) ($_GET['filtro_cliente'] ?? 0);
 $filtroEstado = trim((string) ($_GET['filtro_estado'] ?? ''));
@@ -403,26 +421,31 @@ if ($soloDetalle) {
     exit;
 }
 ?>
-<form method="post" class="form-grid">
+<?php if ($presupuestoForm !== null): ?>
+  <p class="flash">Editando presupuesto #<?= (int) ($presupuestoForm['id'] ?? 0) ?>. Al guardar se actualizarán sus insumos y piezas.</p>
+<?php endif; ?>
+<form method="post" class="form-grid" id="form-presupuesto">
+  <input type="hidden" name="action" value="<?= $presupuestoForm !== null ? 'update_full' : 'create' ?>">
+  <?php if ($presupuestoForm !== null): ?><input type="hidden" name="id" value="<?= (int) ($presupuestoForm['id'] ?? 0) ?>"><?php endif; ?>
   <label>Cliente
     <select name="cliente_id" required>
       <option value="">Seleccionar...</option>
       <?php foreach ($clientes as $cliente): ?>
-        <option value="<?= (int) $cliente['id'] ?>"><?= h((string) $cliente['nombre']) ?></option>
+        <option value="<?= (int) $cliente['id'] ?>" <?= (int) $cliente['id'] === (int) ($presupuestoForm['cliente_id'] ?? 0) ? 'selected' : '' ?>><?= h((string) $cliente['nombre']) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
 
   <label>Detalle
-    <input type="text" name="detalle" placeholder="Ej: Retapizado de sillón 2 cuerpos">
+    <input type="text" name="detalle" placeholder="Ej: Retapizado de sillón 2 cuerpos" value="<?= h((string) ($presupuestoForm['detalle'] ?? '')) ?>">
   </label>
 
   <label>Mano de obra
-    <input type="number" step="0.01" name="mano_obra" required>
+    <input type="number" step="0.01" name="mano_obra" required value="<?= (float) ($presupuestoForm['mano_obra'] ?? 0) ?>">
   </label>
 
   <label>Margen (%)
-    <input type="number" step="0.01" name="margen" value="30" required>
+    <input type="number" step="0.01" name="margen" value="<?= (float) ($presupuestoForm['margen'] ?? 30) ?>" required>
   </label>
 
   <fieldset style="grid-column: 1 / -1;">
@@ -488,7 +511,7 @@ if ($soloDetalle) {
     </div>
   </fieldset>
 
-  <div><button type="submit">Crear presupuesto</button></div>
+  <div><button type="submit"><?= $presupuestoForm !== null ? 'Actualizar presupuesto' : 'Crear presupuesto' ?></button></div>
 </form>
 
 <form method="get" class="form-grid card" style="margin-top:12px;">
@@ -535,6 +558,7 @@ if ($soloDetalle) {
       <input type="hidden" name="id" value="<?= (int) ($presupuesto['id'] ?? 0) ?>">
       <div class="presupuesto-card-head">
         <strong>#<?= (int) ($presupuesto['id'] ?? 0) ?></strong>
+        <a href="presupuesto_nuevo.php?editar=<?= (int) ($presupuesto['id'] ?? 0) ?>#form-presupuesto" class="secondary-btn action-link">Editar completo</a>
         <span class="muted"><?= h((string) ($presupuesto['fecha'] ?? '')) ?></span>
       </div>
 
@@ -583,7 +607,7 @@ if ($soloDetalle) {
       </div>
 
       <div class="actions-wrap presupuesto-card-actions">
-        <a href="#presupuesto-<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn action-link">Editar</a>
+        <a href="presupuesto_nuevo.php?editar=<?= (int) ($presupuesto['id'] ?? 0) ?>#presupuesto-<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn action-link">Editar</a>
         <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
         <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>&solo_detalle=1" class="secondary-btn action-link" target="_blank" rel="noopener">Imprimir</a>
         <a href="presupuesto_nuevo.php?export=csv&id=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn excel-btn action-link">Excel</a>
@@ -747,6 +771,7 @@ if ($soloDetalle) {
   var assistantResult = document.getElementById('asistente-resultado');
   var pendingRow = null;
   var lastAssistantResult = null;
+  var initialEditData = <?= json_encode($presupuestoForm ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
   if (!container || !addButton || !assistantButton || !template || !assistantFurnitureType) {
     return;
@@ -1327,8 +1352,43 @@ if ($soloDetalle) {
     assistantModal.close();
   });
 
+  function loadInitialEditData() {
+    if (!initialEditData) {
+      loadModulesByFurniture();
+      return;
+    }
+    assistantPieces.innerHTML = '';
+    (initialEditData.piezas_corte || []).forEach(function (piece) {
+      addAssistantPiece({
+        modulo: piece.modulo || 'manual',
+        nombre: piece.pieza || 'pieza',
+        insumo_tipo: piece.insumo_tipo || 'otros',
+        alto: Number(piece.alto || 0),
+        ancho: Number(piece.ancho || 0),
+        cantidad: Number(piece.cantidad || 1),
+        usar: true
+      });
+    });
+    if ((initialEditData.piezas_corte || []).length === 0) {
+      loadModulesByFurniture();
+    }
+    (initialEditData.insumos_estimados || []).forEach(function (item) {
+      var row = addItem();
+      applyInsumoSelectionToRow(row, String(item.insumo_id || ''), '', item.categoria || 'todas');
+      var cantidadInput = row.querySelector('input[name="cantidad[]"]');
+      var costoInput = row.querySelector('input[name="costo_unitario[]"]');
+      if (cantidadInput) {
+        cantidadInput.value = Number(item.cantidad || 0);
+      }
+      if (costoInput) {
+        costoInput.value = Number(item.costo_unitario || 0);
+      }
+      updateRowSubtotal(row);
+    });
+  }
+
   updateAssistantTypeFields();
-  loadModulesByFurniture();
+  loadInitialEditData();
 })();
 </script>
 <?php render_page_end(); ?>
