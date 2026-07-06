@@ -97,7 +97,13 @@ function render_presupuesto_detalle(array $presupuestoDetalle, array $clientesBy
     if ($standalone) {
         echo '<div class="inline-actions">';
         echo '<button type="button" onclick="window.print()">Imprimir detalle</button>';
+        echo '<a href="presupuesto_nuevo.php?ver=' . (int) ($presupuestoDetalle['id'] ?? 0) . '#presupuesto-' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Editar presupuesto</a>';
         echo '<a href="presupuesto_nuevo.php?ver=' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Volver</a>';
+        echo '</div>';
+    } else {
+        echo '<div class="inline-actions">';
+        echo '<a href="#presupuesto-' . (int) ($presupuestoDetalle['id'] ?? 0) . '" class="secondary-btn action-link">Editar presupuesto</a>';
+        echo '<a href="presupuesto_nuevo.php" class="secondary-btn action-link">Nuevo presupuesto</a>';
         echo '</div>';
     }
     echo '<p><strong>Cliente:</strong> ' . h((string) ($clientesById[(int) ($presupuestoDetalle['cliente_id'] ?? 0)] ?? 'Cliente eliminado')) . '</p>';
@@ -524,7 +530,7 @@ if ($soloDetalle) {
 
 <section class="presupuestos-cards">
 <?php foreach ($presupuestosListado as $presupuesto): ?>
-  <article class="card presupuesto-card">
+  <article class="card presupuesto-card" id="presupuesto-<?= (int) ($presupuesto['id'] ?? 0) ?>">
     <form method="post" class="presupuesto-card-form">
       <input type="hidden" name="id" value="<?= (int) ($presupuesto['id'] ?? 0) ?>">
       <div class="presupuesto-card-head">
@@ -577,6 +583,7 @@ if ($soloDetalle) {
       </div>
 
       <div class="actions-wrap presupuesto-card-actions">
+        <a href="#presupuesto-<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn action-link">Editar</a>
         <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn info-btn action-link">Detalle</a>
         <a href="presupuesto_nuevo.php?ver=<?= (int) ($presupuesto['id'] ?? 0) ?>&solo_detalle=1" class="secondary-btn action-link" target="_blank" rel="noopener">Imprimir</a>
         <a href="presupuesto_nuevo.php?export=csv&id=<?= (int) ($presupuesto['id'] ?? 0) ?>" class="secondary-btn excel-btn action-link">Excel</a>
