@@ -44,7 +44,7 @@ function presupuesto_tree_material_quantity(array $input, array $module): array
         $rollWidth = max(0.01, presupuesto_tree_number($input['ancho_util'] ?? 1.4));
         $base = $area / $rollWidth;
         $detail = 'metros_lineales';
-    } elseif ($type === 'gomaespuma') {
+    } elseif (in_array($type, ['gomaespuma', 'madera'], true)) {
         $sheetLength = max(0.01, presupuesto_tree_number($input['placa_largo'] ?? 2));
         $sheetWidth = max(0.01, presupuesto_tree_number($input['placa_ancho'] ?? 1));
         $base = ceil(($area / ($sheetLength * $sheetWidth)) * 4) / 4;

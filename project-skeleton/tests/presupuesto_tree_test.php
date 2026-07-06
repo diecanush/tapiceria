@@ -13,6 +13,7 @@ function assert_close(float $actual, float $expected, string $message): void
 $supplies = [
     ['id' => 1, 'nombre' => 'Tela', 'unidad' => 'm', 'precio' => 100],
     ['id' => 2, 'nombre' => 'Fleje', 'unidad' => 'm', 'precio' => 10],
+    ['id' => 3, 'nombre' => 'Madera', 'unidad' => 'placa', 'precio' => 5000],
 ];
 
 $payload = presupuesto_tree_calculate([
@@ -68,5 +69,13 @@ $foam = presupuesto_tree_material_quantity([
     'piezas' => [['alto' => 50, 'ancho' => 100, 'cantidad' => 1]],
 ], []);
 assert_close($foam['cantidad_final'], 0.25, 'La gomaespuma debe redondear a cuartos de placa');
+
+$wood = presupuesto_tree_material_quantity([
+    'tipo' => 'madera',
+    'placa_largo' => 2,
+    'placa_ancho' => 1,
+    'piezas' => [['alto' => 50, 'ancho' => 100, 'cantidad' => 1]],
+], []);
+assert_close($wood['cantidad_final'], 0.25, 'La madera debe calcularse por cuartos de placa');
 
 echo "OK presupuesto_tree_test\n";
