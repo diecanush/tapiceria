@@ -424,7 +424,7 @@ if ($soloDetalle) {
 <?php if ($presupuestoForm !== null): ?>
   <p class="flash">Editando presupuesto #<?= (int) ($presupuestoForm['id'] ?? 0) ?>. Al guardar se actualizarán sus insumos y piezas.</p>
 <?php endif; ?>
-<form method="post" class="form-grid">
+<form method="post" class="form-grid" id="form-presupuesto">
   <input type="hidden" name="action" value="<?= $presupuestoForm !== null ? 'update_full' : 'create' ?>">
   <?php if ($presupuestoForm !== null): ?><input type="hidden" name="id" value="<?= (int) ($presupuestoForm['id'] ?? 0) ?>"><?php endif; ?>
   <label>Cliente
@@ -558,6 +558,7 @@ if ($soloDetalle) {
       <input type="hidden" name="id" value="<?= (int) ($presupuesto['id'] ?? 0) ?>">
       <div class="presupuesto-card-head">
         <strong>#<?= (int) ($presupuesto['id'] ?? 0) ?></strong>
+        <a href="presupuesto_nuevo.php?editar=<?= (int) ($presupuesto['id'] ?? 0) ?>#form-presupuesto" class="secondary-btn action-link">Editar completo</a>
         <span class="muted"><?= h((string) ($presupuesto['fecha'] ?? '')) ?></span>
       </div>
 
