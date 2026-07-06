@@ -8,8 +8,8 @@
     "personalizado": {"modulos_default": []}
   },
   "capas": {
-    "estructura_suspension": {"tipos_insumo_permitidos": ["fleje", "grapas", "tachas"]},
-    "soporte_confort": {"tipos_insumo_permitidos": ["gomaespuma", "guata", "fliselina"]},
+    "estructura_suspension": {"tipos_insumo_permitidos": ["fleje", "madera", "grapas", "tachas", "tornillos"]},
+    "soporte_confort": {"tipos_insumo_permitidos": ["gomaespuma", "madera", "guata", "fliselina"]},
     "regularizacion_proteccion": {"tipos_insumo_permitidos": ["guata", "fliselina", "adhesivo_contacto"]},
     "cobertura": {"tipos_insumo_permitidos": ["tela", "cierre"]},
     "fijacion_terminacion": {"tipos_insumo_permitidos": ["grapas", "tachas", "adhesivo_contacto", "otros"]}
