@@ -150,7 +150,13 @@ render_page_start('Presupuestos por muebles');
 
 <?php if ($viewing !== null): ?>
 <section class="card">
-  <h3>Presupuesto #<?= (int) ($viewing['id'] ?? 0) ?></h3>
+  <div class="node-title">
+    <h3>Presupuesto #<?= (int) ($viewing['id'] ?? 0) ?></h3>
+    <div class="node-actions">
+      <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php?editar_v2=<?= (int) ($viewing['id'] ?? 0) ?>">Editar presupuesto</a>
+      <a class="secondary-btn action-link" href="presupuesto_nuevo_v2.php">Nuevo presupuesto</a>
+    </div>
+  </div>
   <?php
   $viewLabor = (float) ($viewing['mano_obra'] ?? 0);
   $viewMaterials = (float) ($viewing['materiales'] ?? 0);
