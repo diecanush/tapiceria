@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 function render_page_start(string $title): void
 {
+    // La aplicación contiene JavaScript embebido en cada página. Evitamos que
+    // el navegador conserve una versión anterior después de una actualización.
+    if (!headers_sent()) {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+    }
     $stylesPath = __DIR__ . '/../assets/css/styles.css';
     $stylesVersion = is_file($stylesPath) ? (string) filemtime($stylesPath) : '1';
 
@@ -19,7 +26,6 @@ function render_page_start(string $title): void
     echo '<a href="index.php">Inicio</a>';
     echo '<a href="clientes.php">Clientes</a>';
     echo '<a href="insumos.php">Insumos</a>';
-    echo '<a href="presupuesto_nuevo.php">Presupuestos</a>';
     echo '<a href="presupuesto_nuevo_v2.php">Presupuestos V2</a>';
     echo '<a href="config_capas_insumos.php">Config capas</a>';
     echo '<a href="mano_obra_valores.php">Mano de obra</a>';

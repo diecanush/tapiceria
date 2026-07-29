@@ -1,53 +1,87 @@
 [
-  {
-    "id": 1,
-    "mueble_tipo": "sillon_2_cuerpos",
-    "trabajo_tipo": "retapizado_completo",
-    "complejidad": "complejidad_1",
-    "tarifa_hora": 4500,
-    "tiempos_minutos": {
-      "desarme": 240,
-      "soporte_elastico": 120,
-      "confort_gomaespuma": 120,
-      "confort_guata": 60,
-      "cobertura_corte_tela": 60,
-      "cobertura_confeccion_tela": 120,
-      "terminacion": 60
+    {
+        "id": 1,
+        "mueble_tipo": "sillon_2_cuerpos",
+        "trabajo_tipo": "retapizado_completo",
+        "complejidad": "complejidad_1",
+        "tarifa_hora": 4500,
+        "tiempos_minutos": {
+            "desarme": 240,
+            "soporte_elastico": 120,
+            "confort_gomaespuma": 120,
+            "confort_guata": 60,
+            "cobertura_corte_tela": 60,
+            "cobertura_confeccion_tela": 120,
+            "terminacion": 60
+        },
+        "activo": true
     },
-    "activo": true
-  },
-  {
-    "id": 2,
-    "mueble_tipo": "sillon_2_cuerpos",
-    "trabajo_tipo": "retapizado_completo",
-    "complejidad": "complejidad_2",
-    "tarifa_hora": 4500,
-    "tiempos_minutos": {
-      "desarme": 240,
-      "soporte_elastico": 120,
-      "confort_gomaespuma": 120,
-      "confort_guata": 60,
-      "cobertura_corte_tela": 60,
-      "cobertura_confeccion_tela": 180,
-      "terminacion": 90
+    {
+        "id": 2,
+        "mueble_tipo": "sillon_2_cuerpos",
+        "trabajo_tipo": "retapizado_completo",
+        "complejidad": "complejidad_2",
+        "tarifa_hora": 4500,
+        "tiempos_minutos": {
+            "desarme": 240,
+            "soporte_elastico": 120,
+            "confort_gomaespuma": 120,
+            "confort_guata": 60,
+            "cobertura_corte_tela": 60,
+            "cobertura_confeccion_tela": 180,
+            "terminacion": 90
+        },
+        "activo": true
     },
-    "activo": true
-  },
-  {
-    "id": 3,
-    "mueble_tipo": "sillon_2_cuerpos",
-    "trabajo_tipo": "retapizado_completo",
-    "complejidad": "complejidad_3",
-    "tarifa_hora": 4500,
-    "tiempos_minutos": {
-      "desarme": 240,
-      "soporte_elastico": 120,
-      "confort_gomaespuma": 120,
-      "confort_guata": 60,
-      "cobertura_corte_tela": 120,
-      "cobertura_confeccion_tela": 480,
-      "terminacion": 120
+    {
+        "id": 3,
+        "mueble_tipo": "sillon_2_cuerpos",
+        "trabajo_tipo": "retapizado_completo",
+        "complejidad": "complejidad_3",
+        "tarifa_hora": 4500,
+        "tiempos_minutos": {
+            "desarme": 240,
+            "soporte_elastico": 120,
+            "confort_gomaespuma": 120,
+            "confort_guata": 60,
+            "cobertura_corte_tela": 120,
+            "cobertura_confeccion_tela": 480,
+            "terminacion": 120
+        },
+        "activo": true
     },
-    "activo": true
-  }
+    {
+        "id": 4,
+        "mueble_tipo": "silla",
+        "trabajo_tipo": "retapizado_completo",
+        "complejidad": "complejidad_1",
+        "tarifa_hora": 0,
+        "tiempos_minutos": {
+            "desarme": 0,
+            "soporte_elastico": 0,
+            "confort_gomaespuma": 0,
+            "confort_guata": 0,
+            "cobertura_corte_tela": 0,
+            "cobertura_confeccion_tela": 0,
+            "terminacion": 0
+        },
+        "activo": true
+    },
+    {
+        "id": 5,
+        "mueble_tipo": "Sillon_individual",
+        "trabajo_tipo": "retapizado_completo",
+        "complejidad": "complejidad_1",
+        "tarifa_hora": 0,
+        "tiempos_minutos": {
+            "desarme": 0,
+            "soporte_elastico": 0,
+            "confort_gomaespuma": 0,
+            "confort_guata": 0,
+            "cobertura_corte_tela": 0,
+            "cobertura_confeccion_tela": 0,
+            "terminacion": 0
+        },
+        "activo": true
+    }
 ]

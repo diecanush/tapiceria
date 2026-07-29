@@ -21,6 +21,82 @@ function presupuesto_tree_labor_total(array $template): float
     return round(($minutes / 60) * max(0, (float) ($template['tarifa_hora'] ?? 0)), 2);
 }
 
+function presupuesto_tree_pack_shelves(array $rectangles, float $rollWidth): float
+{
+    usort($rectangles, static function (array $left, array $right): int {
+        return max($right['length'], $right['width']) <=> max($left['length'], $left['width']);
+    });
+    $shelves = [];
+    foreach ($rectangles as $rectangle) {
+        $best = -1;
+        $increase = INF;
+        foreach ($shelves as $index => $shelf) {
+            if ($shelf['width'] + $rectangle['width'] > $rollWidth + 0.000001) {
+                continue;
+            }
+            $added = max($shelf['length'], $rectangle['length']) - $shelf['length'];
+            if ($added < $increase) {
+                $increase = $added;
+                $best = $index;
+            }
+        }
+        if ($best < 0) {
+            $shelves[] = ['width' => $rectangle['width'], 'length' => $rectangle['length']];
+        } else {
+            $shelves[$best]['width'] += $rectangle['width'];
+            $shelves[$best]['length'] = max($shelves[$best]['length'], $rectangle['length']);
+        }
+    }
+    return array_sum(array_column($shelves, 'length'));
+}
+
+function presupuesto_tree_linear_piece_meters(array $pieces, float $rollWidth): float
+{
+    $rollWidth = max(0.01, $rollWidth);
+    $rectangles = [];
+    $fallback = 0.0;
+    foreach ($pieces as $piece) {
+        $quantity = max(0, (int) ($piece['cantidad'] ?? 0));
+        $height = max(0, presupuesto_tree_number($piece['alto'] ?? 0)) / 100;
+        $width = max(0, presupuesto_tree_number($piece['ancho'] ?? 0)) / 100;
+        $options = [['length' => $height, 'width' => $width]];
+        if (($piece['rotatable'] ?? $piece['rotable'] ?? true) !== false && $height !== $width) {
+            $options[] = ['length' => $width, 'width' => $height];
+        }
+        $valid = array_values(array_filter($options, static fn (array $option): bool => $option['width'] <= $rollWidth + 0.000001));
+        if ($valid === []) {
+            $fallback += ($height * $width / $rollWidth) * $quantity;
+            continue;
+        }
+        for ($copy = 0; $copy < $quantity; $copy++) {
+            $rectangles[] = ['options' => $valid];
+        }
+    }
+    if ($rectangles === []) {
+        return $fallback;
+    }
+
+    $best = INF;
+    if (count($rectangles) <= 12) {
+        $search = function (int $index, array $chosen) use (&$search, &$best, $rectangles, $rollWidth): void {
+            if ($index === count($rectangles)) {
+                $best = min($best, presupuesto_tree_pack_shelves($chosen, $rollWidth));
+                return;
+            }
+            foreach ($rectangles[$index]['options'] as $option) {
+                $search($index + 1, [...$chosen, $option]);
+            }
+        };
+        $search(0, []);
+    } else {
+        $chosen = array_map(static function (array $rectangle): array {
+            return array_reduce($rectangle['options'], static fn (array $shortest, array $option): array => $option['length'] < $shortest['length'] ? $option : $shortest, $rectangle['options'][0]);
+        }, $rectangles);
+        $best = presupuesto_tree_pack_shelves($chosen, $rollWidth);
+    }
+    return $best + $fallback;
+}
+
 function presupuesto_tree_material_quantity(array $input, array $module): array
 {
     $type = (string) ($input['tipo'] ?? 'otros');
@@ -42,7 +118,7 @@ function presupuesto_tree_material_quantity(array $input, array $module): array
     $detail = 'area';
     if ($type === 'tela' || $type === 'guata' || $type === 'fliselina') {
         $rollWidth = max(0.01, presupuesto_tree_number($input['ancho_util'] ?? 1.4));
-        $base = $area / $rollWidth;
+        $base = presupuesto_tree_linear_piece_meters($pieces, $rollWidth);
         $detail = 'metros_lineales';
     } elseif (in_array($type, ['gomaespuma', 'madera'], true)) {
         $sheetLength = max(0.01, presupuesto_tree_number($input['placa_largo'] ?? 2));
@@ -102,6 +178,7 @@ function presupuesto_tree_calculate(array $payload, array $supplies): array
         $itemMaterials = 0.0;
         $modules = [];
         foreach ((array) ($item['modulos'] ?? []) as $moduleIndex => $module) {
+            $moduleQuantity = max(1, (int) ($module['cantidad'] ?? 1));
             $layers = [];
             foreach ((array) ($module['capas'] ?? []) as $layerIndex => $layer) {
                 $inputs = [];
@@ -112,6 +189,9 @@ function presupuesto_tree_calculate(array $payload, array $supplies): array
                     }
                     $input = presupuesto_tree_material_quantity($input, $module);
                     $unitCost = max(0, presupuesto_tree_number($input['costo_unitario'] ?? $suppliesById[$supplyId]['precio'] ?? 0));
+                    $input['cantidad_por_modulo'] = $input['cantidad_final'];
+                    $input['cantidad_modulos'] = $moduleQuantity;
+                    $input['cantidad_final'] = round($input['cantidad_final'] * $moduleQuantity, 4);
                     $cost = round($input['cantidad_final'] * $unitCost, 2);
                     $input['id'] = (string) ($input['id'] ?? 'insumo-' . $itemIndex . '-' . $moduleIndex . '-' . $layerIndex . '-' . $inputIndex);
                     $input['nombre'] = (string) ($suppliesById[$supplyId]['nombre'] ?? 'Insumo');
@@ -124,6 +204,7 @@ function presupuesto_tree_calculate(array $payload, array $supplies): array
                 $layer['insumos'] = $inputs;
                 $layers[] = $layer;
             }
+            $module['cantidad'] = $moduleQuantity;
             $module['capas'] = $layers;
             $modules[] = $module;
         }
@@ -153,6 +234,67 @@ function presupuesto_tree_from_legacy(array $budget): array
     if (isset($budget['items']) && is_array($budget['items'])) {
         return $budget;
     }
+
+    // El formato clásico guardaba insumos y piezas en listas planas. Lo
+    // convertimos solo para mostrar/editar en V2; el registro original no se
+    // modifica hasta que el usuario lo guarde explícitamente.
+    if (!isset($budget['estructura_insumos_v2']) && isset($budget['insumos_estimados'])) {
+        $pieces = [];
+        foreach ((array) ($budget['piezas_corte'] ?? []) as $piece) {
+            $pieces[] = [
+                'modulo' => (string) ($piece['modulo'] ?? 'modulo'),
+                'insumo_tipo' => (string) ($piece['insumo_tipo'] ?? 'otros'),
+                'pieza' => (string) ($piece['pieza'] ?? 'pieza'),
+                'alto' => (float) ($piece['alto'] ?? 0),
+                'ancho' => (float) ($piece['ancho'] ?? 0),
+                'cantidad' => (int) ($piece['cantidad'] ?? 1),
+            ];
+        }
+        $inputs = [];
+        foreach ((array) $budget['insumos_estimados'] as $legacyInput) {
+            $inputType = (string) ($legacyInput['categoria'] ?? 'otros');
+            $inputPieces = array_values(array_filter(
+                $pieces,
+                static fn (array $piece): bool => (string) ($piece['insumo_tipo'] ?? '') === $inputType
+            ));
+            foreach ($inputPieces as &$inputPiece) {
+                unset($inputPiece['modulo']);
+            }
+            unset($inputPiece);
+            $inputs[] = [
+                'insumo_id' => (int) ($legacyInput['insumo_id'] ?? 0),
+                'tipo' => $inputType,
+                'piezas' => $inputPieces,
+                'merma_pct' => 0,
+                'cantidad_ajustada' => (float) ($legacyInput['cantidad'] ?? 0),
+                'costo_unitario' => (float) ($legacyInput['costo_unitario'] ?? 0),
+                'motivo_ajuste' => 'Importado del formato clásico',
+            ];
+        }
+        $budget['items'] = [[
+            'id' => 'legacy-item',
+            'tipo_mueble' => (string) ($budget['mueble_tipo'] ?? 'personalizado'),
+            'complejidad' => 'importada',
+            'cantidad' => 1,
+            'mano_obra_unitaria' => (float) ($budget['mano_obra'] ?? 0),
+            'mano_obra_plantilla_id' => $budget['mano_obra_plantilla_id'] ?? null,
+            'mano_obra_snapshot' => $budget['mano_obra_plantilla_snapshot'] ?? null,
+            'modulos' => [[
+                'id' => 'legacy-modulo',
+                'tipo' => 'Importado',
+                'alto' => 0,
+                'ancho' => 0,
+                'profundidad' => 0,
+                'capas' => [[
+                    'id' => 'legacy-capa',
+                    'tipo' => 'importada',
+                    'insumos' => $inputs,
+                ]],
+            ]],
+        ]];
+        return $budget;
+    }
+
     $modules = [];
     foreach ((array) ($budget['estructura_insumos_v2'] ?? []) as $legacyInput) {
         foreach ((array) ($legacyInput['modulos'] ?? []) as $legacyModule) {
