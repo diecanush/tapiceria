@@ -4,5 +4,1651 @@
     "cliente_id": 1,
     "estado": "borrador",
     "total": 0
+  },
+  {
+    "id": 7,
+    "cliente_id": 7,
+    "detalle": "Sillon Individuel De Estilo",
+    "mueble_tipo": "sillon_2_cuerpos",
+    "mano_obra": 250000,
+    "materiales": 261917.49,
+    "insumos_estimados": [
+      {
+        "insumo_id": 32,
+        "nombre": "Tiracierre Cadena NÂ°6",
+        "categoria": "cierre",
+        "unidad": "unidad",
+        "cantidad": 1,
+        "costo_unitario": 366,
+        "subtotal": 366
+      },
+      {
+        "insumo_id": 5,
+        "nombre": "Deslizador",
+        "categoria": "cierre",
+        "unidad": "unidad",
+        "cantidad": 1,
+        "costo_unitario": 500,
+        "subtotal": 500
+      },
+      {
+        "insumo_id": 22,
+        "nombre": "Lino Maui Piedra",
+        "categoria": "tela",
+        "unidad": "m",
+        "cantidad": 4,
+        "costo_unitario": 11000,
+        "subtotal": 44000
+      }
+    ],
+    "piezas_corte": [
+      {
+        "modulo": "asiento",
+        "pieza": "frente_fondo",
+        "insumo_tipo": "tela",
+        "alto": 70,
+        "ancho": 60,
+        "cantidad": 2,
+        "estado": "pendiente"
+      },
+      {
+        "modulo": "respaldo",
+        "pieza": "frente_dorso",
+        "insumo_tipo": "tela",
+        "alto": 80,
+        "ancho": 65,
+        "cantidad": 2,
+        "estado": "pendiente"
+      },
+      {
+        "modulo": "apoyabrazos",
+        "pieza": "tapa",
+        "insumo_tipo": "tela",
+        "alto": 45,
+        "ancho": 70,
+        "cantidad": 2,
+        "estado": "pendiente"
+      },
+      {
+        "modulo": "almohadon",
+        "pieza": "caras",
+        "insumo_tipo": "tela",
+        "alto": 70,
+        "ancho": 60,
+        "cantidad": 2,
+        "estado": "pendiente"
+      },
+      {
+        "modulo": "Laterales",
+        "pieza": "Frente_fondo",
+        "insumo_tipo": "tela",
+        "alto": 50,
+        "ancho": 30,
+        "cantidad": 2,
+        "estado": "pendiente"
+      }
+    ],
+    "margen": 0,
+    "impuesto": 0,
+    "total": 511917.49,
+    "estado": "finalizado",
+    "fecha": "2026-06-26",
+    "items": [
+      {
+        "id": "legacy-item",
+        "tipo_mueble": "Sillon_individual",
+        "complejidad": "complejidad_3",
+        "cantidad": 1,
+        "mano_obra_unitaria": 250000,
+        "mano_obra_plantilla_id": null,
+        "mano_obra_snapshot": null,
+        "modulos": [
+          {
+            "id": "mod-ms69srqli3iv",
+            "tipo": "respaldo",
+            "alto": 80,
+            "ancho": 65,
+            "profundidad": 0,
+            "capas": [
+              {
+                "id": "layer-ms69xl0mttv8",
+                "tipo": "estructura_suspension",
+                "insumos": [
+                  {
+                    "id": "input-ms6k13ygimw9",
+                    "tipo": "fleje",
+                    "costo_unitario": 380,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "cuadriculado",
+                    "direccion": "ancho",
+                    "separacion_cm": 9,
+                    "grapas_por_extremo": 6,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "",
+                        "alto": 80,
+                        "ancho": 65,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 13.475,
+                    "cantidad_final": 13.475,
+                    "costo_unitario_total": 5120.5,
+                    "tiras": 17,
+                    "grapas_estimadas": 204,
+                    "origen_cantidad": "metros_fleje",
+                    "insumo_id": 29,
+                    "nombre": "Cinta Fleje",
+                    "unidad": "metro",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 13.475,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6euuxgovo1",
+                "tipo": "soporte_confort",
+                "insumos": [
+                  {
+                    "id": "input-ms6f475g49tu",
+                    "tipo": "gomaespuma",
+                    "costo_unitario": 168900,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 70,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.25,
+                    "cantidad_final": 0.25,
+                    "costo_unitario_total": 42225,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "placas",
+                    "insumo_id": 23,
+                    "nombre": "Alta densidad 28k 5cm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.25,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6faop9smg6",
+                    "tipo": "gomaespuma",
+                    "costo_unitario": 47740,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 75,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.25,
+                    "cantidad_final": 0.25,
+                    "costo_unitario_total": 11935,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "placas",
+                    "insumo_id": 24,
+                    "nombre": "Alta densidad 28k 3cm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.25,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6fdaf0ygfh",
+                    "tipo": "guata",
+                    "costo_unitario": 2334,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 70,
+                        "ancho": 65,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.715,
+                    "cantidad_final": 0.715,
+                    "costo_unitario_total": 1668.81,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 41,
+                    "nombre": "Guata",
+                    "unidad": "metro",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.715,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6fdl918q26",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6fhy0nk8dk",
+                    "tipo": "tela",
+                    "costo_unitario": 11000,
+                    "merma_pct": 5,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 90,
+                        "ancho": 75,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "fijacion",
+                          "derecho": "fijacion",
+                          "inferior": "fijacion",
+                          "izquierdo": "fijacion"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 1.575,
+                    "cantidad_final": 1.575,
+                    "costo_unitario_total": 17325,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 22,
+                    "nombre": "Lino Maui Piedra",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 1.575,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6fiefawqbl",
+                "tipo": "fijacion_terminacion",
+                "insumos": [
+                  {
+                    "id": "input-ms6fjlw2rve7",
+                    "tipo": "tachas",
+                    "costo_unitario": 50,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 120,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 80,
+                        "ancho": 65,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 1.4835,
+                    "cantidad_final": 120,
+                    "costo_unitario_total": 6000,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "ajuste_manual",
+                    "insumo_id": 45,
+                    "nombre": "Tachas NÂ°11",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "calculo manual",
+                    "cantidad_por_modulo": 120,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              }
+            ],
+            "cantidad": 1
+          },
+          {
+            "id": "mod-ms69yuu8q06p",
+            "tipo": "asiento",
+            "alto": 25,
+            "ancho": 60,
+            "profundidad": 70,
+            "capas": [
+              {
+                "id": "layer-ms6fwfam65v5",
+                "tipo": "estructura_suspension",
+                "insumos": [
+                  {
+                    "id": "input-ms6hqk5etx1d",
+                    "tipo": "fleje",
+                    "costo_unitario": 380,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "cuadriculado",
+                    "direccion": "ancho",
+                    "separacion_cm": 8,
+                    "grapas_por_extremo": 6,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 25,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 4.84,
+                    "cantidad_final": 4.84,
+                    "costo_unitario_total": 1839.2,
+                    "tiras": 12,
+                    "grapas_estimadas": 144,
+                    "origen_cantidad": "metros_fleje",
+                    "insumo_id": 29,
+                    "nombre": "Cinta Fleje",
+                    "unidad": "metro",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 4.84,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6hs50iz50s",
+                    "tipo": "tela",
+                    "costo_unitario": 6000,
+                    "merma_pct": 0,
+                    "ancho_util": 3.2,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 70,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.6,
+                    "cantidad_final": 0.6,
+                    "costo_unitario_total": 3600,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 13,
+                    "nombre": "Lienzo Crudo 20/20 ancho 3.20m",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.6,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6ht03g0saw",
+                    "tipo": "grapas",
+                    "costo_unitario": 2,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 30,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 25,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.2925,
+                    "cantidad_final": 30,
+                    "costo_unitario_total": 60,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "ajuste_manual",
+                    "insumo_id": 42,
+                    "nombre": "Grapas",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "ajuste manual",
+                    "cantidad_por_modulo": 30,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6hqndvgrkr",
+                "tipo": "soporte_confort",
+                "insumos": [
+                  {
+                    "id": "input-ms6hujpov7bu",
+                    "tipo": "gomaespuma",
+                    "costo_unitario": 168900,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 75,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.275,
+                    "cantidad_final": 0.275,
+                    "costo_unitario_total": 46447.5,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "placas",
+                    "insumo_id": 23,
+                    "nombre": "Alta densidad 28k 5cm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.275,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6hv7jsapw2",
+                    "tipo": "gomaespuma",
+                    "costo_unitario": 22660,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 25,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.275,
+                    "cantidad_final": 0.275,
+                    "costo_unitario_total": 6231.5,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "placas",
+                    "insumo_id": 26,
+                    "nombre": "Alta densidad 28k 1cm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.275,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6hw9j59eaz",
+                    "tipo": "guata",
+                    "costo_unitario": 2334,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 75,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "alto": 25,
+                        "ancho": 60,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.66,
+                    "cantidad_final": 0.66,
+                    "costo_unitario_total": 1540.44,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 41,
+                    "nombre": "Guata",
+                    "unidad": "metro",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.66,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6hwimo3y2z",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6i6p83e5v3",
+                    "tipo": "tela",
+                    "costo_unitario": 11000,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 29,
+                        "ancho": 64,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "alto": 75,
+                        "ancho": 65,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.65,
+                    "cantidad_final": 0.65,
+                    "costo_unitario_total": 7150,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 22,
+                    "nombre": "Lino Maui Piedra",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.65,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              }
+            ],
+            "cantidad": 1
+          },
+          {
+            "id": "mod-ms6a11pn6lcw",
+            "tipo": "apoyabrazos",
+            "alto": 45,
+            "ancho": 0,
+            "profundidad": 70,
+            "capas": [
+              {
+                "id": "layer-ms6fkkyzo2v8",
+                "tipo": "estructura_suspension",
+                "insumos": [
+                  {
+                    "id": "input-ms6ghixqwqs5",
+                    "tipo": "tela",
+                    "costo_unitario": 6000,
+                    "merma_pct": 0,
+                    "ancho_util": 3.2,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 45,
+                        "ancho": 70,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.45,
+                    "cantidad_final": 0.9,
+                    "costo_unitario_total": 5400,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 13,
+                    "nombre": "Lienzo Crudo 20/20 ancho 3.20m",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.45,
+                    "cantidad_modulos": 2
+                  },
+                  {
+                    "id": "input-ms6gqnfhb9wf",
+                    "tipo": "grapas",
+                    "costo_unitario": 2,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 50,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 45,
+                        "ancho": 70,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.315,
+                    "cantidad_final": 100,
+                    "costo_unitario_total": 200,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "ajuste_manual",
+                    "insumo_id": 42,
+                    "nombre": "Grapas",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "calculo manual",
+                    "cantidad_por_modulo": 50,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6gntqeq8hs",
+                "tipo": "soporte_confort",
+                "insumos": [
+                  {
+                    "id": "input-ms6gy50sgnnz",
+                    "tipo": "gomaespuma",
+                    "costo_unitario": 47740,
+                    "merma_pct": 5,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 50,
+                        "ancho": 25,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "alto": 70,
+                        "ancho": 45,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.2625,
+                    "cantidad_final": 0.525,
+                    "costo_unitario_total": 25063.5,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "placas",
+                    "insumo_id": 24,
+                    "nombre": "Alta densidad 28k 3cm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.2625,
+                    "cantidad_modulos": 2
+                  },
+                  {
+                    "id": "input-ms6h0f5oe8fk",
+                    "tipo": "guata",
+                    "costo_unitario": 2334,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 90,
+                        "ancho": 70,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.7,
+                    "cantidad_final": 1.4,
+                    "costo_unitario_total": 3267.6,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 41,
+                    "nombre": "Guata",
+                    "unidad": "metro",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.7,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6h0izs1dma",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6h3ims0kc6",
+                    "tipo": "tela",
+                    "costo_unitario": 11000,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 55,
+                        "ancho": 80,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "fijacion",
+                          "derecho": "fijacion",
+                          "inferior": "fijacion",
+                          "izquierdo": "fijacion"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "alto": 40,
+                        "ancho": 80,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "fijacion",
+                          "inferior": "ninguno",
+                          "izquierdo": "fijacion"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.8,
+                    "cantidad_final": 1.6,
+                    "costo_unitario_total": 17600,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 22,
+                    "nombre": "Lino Maui Piedra",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.8,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              }
+            ],
+            "cantidad": 2
+          },
+          {
+            "id": "mod-ms6aiy3x9fz7",
+            "tipo": "lateral",
+            "alto": 50,
+            "ancho": 0,
+            "profundidad": 30,
+            "cantidad": 2,
+            "capas": [
+              {
+                "id": "layer-ms6idcv2b85r",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6ihnyftegs",
+                    "tipo": "tela",
+                    "costo_unitario": 11000,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "alto": 54,
+                        "ancho": 34,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.34,
+                    "cantidad_final": 0.68,
+                    "costo_unitario_total": 7480,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 22,
+                    "nombre": "Lino Maui Piedra",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.34,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6jb1md8uqx",
+                "tipo": "estructura_suspension",
+                "insumos": [
+                  {
+                    "id": "input-ms6jcmgmucyn",
+                    "tipo": "tela",
+                    "costo_unitario": 6000,
+                    "merma_pct": 0,
+                    "ancho_util": 3.2,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "lateral_izq",
+                        "alto": 50,
+                        "ancho": 30,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.3,
+                    "cantidad_final": 0.6,
+                    "costo_unitario_total": 3600,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 13,
+                    "nombre": "Lienzo Crudo 20/20 ancho 3.20m",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.3,
+                    "cantidad_modulos": 2
+                  },
+                  {
+                    "id": "input-ms6jdfu41isb",
+                    "tipo": "grapas",
+                    "costo_unitario": 2,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 30,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "",
+                        "alto": 50,
+                        "ancho": 30,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.2417,
+                    "cantidad_final": 60,
+                    "costo_unitario_total": 120,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "ajuste_manual",
+                    "insumo_id": 42,
+                    "nombre": "Grapas",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "a",
+                    "cantidad_por_modulo": 30,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6jdo1bn6vj",
+                "tipo": "soporte_confort",
+                "insumos": [
+                  {
+                    "id": "input-ms6jfse2cas4",
+                    "tipo": "gomaespuma",
+                    "costo_unitario": 47740,
+                    "merma_pct": 0,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "lateral_izq",
+                        "alto": 45,
+                        "ancho": 25,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "cara": "",
+                        "alto": 55,
+                        "ancho": 35,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.25,
+                    "cantidad_final": 0.5,
+                    "costo_unitario_total": 23870,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "placas",
+                    "insumo_id": 24,
+                    "nombre": "Alta densidad 28k 3cm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.25,
+                    "cantidad_modulos": 2
+                  },
+                  {
+                    "id": "input-ms6jghgdcwkw",
+                    "tipo": "guata",
+                    "costo_unitario": 2334,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "lateral_izq",
+                        "alto": 50,
+                        "ancho": 30,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.33,
+                    "cantidad_final": 0.66,
+                    "costo_unitario_total": 1540.44,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 41,
+                    "nombre": "Guata",
+                    "unidad": "metro",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.33,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              },
+              {
+                "id": "layer-ms6jhststrhn",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6jkoii2gzx",
+                    "tipo": "tela",
+                    "costo_unitario": 4000,
+                    "merma_pct": 0,
+                    "ancho_util": 1,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "",
+                        "alto": 54,
+                        "ancho": 34,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.34,
+                    "cantidad_final": 0.68,
+                    "costo_unitario_total": 2720,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 48,
+                    "nombre": "Arpillera",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.34,
+                    "cantidad_modulos": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "mod-ms6idi30gsqz",
+            "tipo": "almohadon",
+            "alto": 10,
+            "ancho": 65,
+            "profundidad": 75,
+            "cantidad": 1,
+            "capas": [
+              {
+                "id": "layer-ms6im64zf3d3",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6ionxq5ckt",
+                    "tipo": "tela",
+                    "costo_unitario": 11000,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "superior",
+                        "alto": 79,
+                        "ancho": 69,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "cara": "frente",
+                        "alto": 14,
+                        "ancho": 69,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      },
+                      {
+                        "pieza": "pieza",
+                        "cara": "lateral_izq",
+                        "alto": 14,
+                        "ancho": 79,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 1.331,
+                    "cantidad_final": 1.331,
+                    "costo_unitario_total": 14641,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 22,
+                    "nombre": "Lino Maui Piedra",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 1.331,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6iqgtjm8zf",
+                    "tipo": "otros",
+                    "costo_unitario": 200,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 6,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "",
+                        "alto": 10,
+                        "ancho": 65,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.0715,
+                    "cantidad_final": 6,
+                    "costo_unitario_total": 1200,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "ajuste_manual",
+                    "insumo_id": 46,
+                    "nombre": "Cordon de plastico 2mm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "manual",
+                    "cantidad_por_modulo": 6,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "mod-ms6if5hjwfdv",
+            "tipo": "almohadon",
+            "alto": 28,
+            "ancho": 50,
+            "profundidad": 0,
+            "cantidad": 1,
+            "capas": [
+              {
+                "id": "layer-ms6iqnouj1bz",
+                "tipo": "cobertura",
+                "insumos": [
+                  {
+                    "id": "input-ms6j97iataad",
+                    "tipo": "tela",
+                    "costo_unitario": 11000,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 0,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "frente",
+                        "alto": 32,
+                        "ancho": 54,
+                        "cantidad": 2,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "costura",
+                          "derecho": "costura",
+                          "inferior": "costura",
+                          "izquierdo": "costura"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.352,
+                    "cantidad_final": 0.352,
+                    "costo_unitario_total": 3872,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "metros_lineales",
+                    "insumo_id": 22,
+                    "nombre": "Lino Maui Piedra",
+                    "unidad": "m",
+                    "motivo_ajuste": "",
+                    "cantidad_por_modulo": 0.352,
+                    "cantidad_modulos": 1
+                  },
+                  {
+                    "id": "input-ms6ja6xsd6um",
+                    "tipo": "otros",
+                    "costo_unitario": 200,
+                    "merma_pct": 10,
+                    "ancho_util": 1.4,
+                    "placa_largo": 2,
+                    "placa_ancho": 1,
+                    "patron": "lineal",
+                    "direccion": "ancho",
+                    "separacion_cm": 10,
+                    "grapas_por_extremo": 2,
+                    "cantidad_ajustada": 1,
+                    "piezas": [
+                      {
+                        "pieza": "pieza",
+                        "cara": "",
+                        "alto": 28,
+                        "ancho": 50,
+                        "cantidad": 1,
+                        "rotatable": true,
+                        "bordes": {
+                          "superior": "ninguno",
+                          "derecho": "ninguno",
+                          "inferior": "ninguno",
+                          "izquierdo": "ninguno"
+                        }
+                      }
+                    ],
+                    "cantidad_calculada": 0.154,
+                    "cantidad_final": 1,
+                    "costo_unitario_total": 200,
+                    "tiras": 0,
+                    "grapas_estimadas": 0,
+                    "origen_cantidad": "ajuste_manual",
+                    "insumo_id": 46,
+                    "nombre": "Cordon de plastico 2mm",
+                    "unidad": "unidad",
+                    "motivo_ajuste": "manual",
+                    "cantidad_por_modulo": 1,
+                    "cantidad_modulos": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "trabajo_tipo": "Restauracion",
+        "materiales_unitarios": 261917.49,
+        "subtotal_unitario": 511917.49,
+        "subtotal_total": 511917.49
+      }
+    ],
+    "version_flujo": "presupuesto_jerarquico_v3",
+    "config_capas_version": "1.0",
+    "config_capas_snapshot": {
+      "version": "1.0",
+      "muebles": {
+        "sillon_2_cuerpos": {
+          "modulos_default": [
+            "asiento",
+            "respaldo",
+            "brazo_izq",
+            "brazo_der",
+            "base"
+          ]
+        },
+        "sillon_3_cuerpos": {
+          "modulos_default": [
+            "asiento",
+            "respaldo",
+            "brazo_izq",
+            "brazo_der",
+            "base"
+          ]
+        },
+        "silla": {
+          "modulos_default": [
+            "asiento",
+            "respaldo"
+          ]
+        },
+        "otomana": {
+          "modulos_default": [
+            "asiento",
+            "base"
+          ]
+        },
+        "Sillon_individual": {
+          "modulos_default": [
+            "asiento",
+            "base",
+            "respaldo",
+            "brazo_izq",
+            "brazo_der"
+          ]
+        }
+      },
+      "capas": {
+        "estructura_suspension": {
+          "tipos_insumo_permitidos": [
+            "fleje",
+            "madera",
+            "grapas",
+            "tachas",
+            "tornillos",
+            "tela",
+            "otros"
+          ]
+        },
+        "soporte_confort": {
+          "tipos_insumo_permitidos": [
+            "gomaespuma",
+            "madera",
+            "guata",
+            "fliselina",
+            "tela",
+            "otros"
+          ]
+        },
+        "regularizacion_proteccion": {
+          "tipos_insumo_permitidos": [
+            "guata",
+            "fliselina",
+            "adhesivo_contacto",
+            "tela",
+            "otros"
+          ]
+        },
+        "cobertura": {
+          "tipos_insumo_permitidos": [
+            "tela",
+            "cierre",
+            "otros"
+          ]
+        },
+        "fijacion_terminacion": {
+          "tipos_insumo_permitidos": [
+            "grapas",
+            "tachas",
+            "adhesivo_contacto",
+            "tela",
+            "otros"
+          ]
+        }
+      }
+    },
+    "audit": {
+      "updated_at": "2026-07-29T22:46:01+02:00",
+      "flow": "presupuesto_tree_update"
+    },
+    "catalogos_personalizados": {
+      "muebles": [
+        "otomana",
+        "personalizado",
+        "Sillon_individual"
+      ],
+      "trabajos": [
+        "retapizado_completo",
+        "Restauracion"
+      ],
+      "dificultades": [
+        "complejidad_1",
+        "complejidad_3"
+      ],
+      "capas": [
+        "soporte_confort",
+        "fijacion_terminacion",
+        "cobertura",
+        "estructura_suspension",
+        "importada"
+      ],
+      "modulos": [
+        "base",
+        "respaldo",
+        "asiento",
+        "apoyabrazos",
+        "lateral",
+        "modulo",
+        "almohadon"
+      ],
+      "tipos_insumo": [
+        "tela_soporte"
+      ]
+    }
   }
 ]
