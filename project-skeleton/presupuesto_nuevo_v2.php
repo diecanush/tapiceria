@@ -400,13 +400,14 @@ render_page_start('Presupuestos por muebles');
 .budget-history-wrap{overflow-x:auto}.budget-history{min-width:940px}.budget-history th,.budget-history td{white-space:nowrap}.budget-history .history-description{white-space:normal;min-width:150px}.budget-history .history-actions{display:flex;flex-wrap:nowrap;gap:5px;align-items:center}.budget-history .history-actions .action-link,.budget-history .history-actions button{width:auto;margin:0;padding:6px 8px;line-height:1.2}.budget-history .history-actions .danger-btn{margin-left:0}
 .detail-tree{margin:8px 0;border-left:3px solid #d4dae2;padding-left:10px}.detail-item{border-color:#47739f}.detail-module{border-color:#708f58}.detail-layer{border-color:#aa7c4f}.detail-tree>summary{cursor:pointer;padding:7px 4px;font-weight:700}.detail-children{padding:2px 0 4px}.detail-supply{margin:8px 0;padding:9px;background:#f7f9fb;border:1px solid #d9e1ea;border-radius:5px}.detail-supply>summary{cursor:pointer;font-weight:700}.detail-supply-meta{display:flex;flex-wrap:wrap;gap:6px 18px;padding:8px 0;color:#3f4d5d}.detail-pieces{width:100%;border-collapse:collapse;margin-top:7px;font-size:13px}.detail-pieces th,.detail-pieces td{border:1px solid #d9e1ea;padding:5px 6px;text-align:left}.detail-pieces th{background:#edf2f7}.detail-empty{color:#667788;font-style:italic;margin:7px 0}
 .detail-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.detail-header h3{margin:0}.detail-totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0;padding:10px;background:#f4f8fc;border:1px solid #b9c9dc;border-radius:6px}.detail-totals strong{display:block;font-size:12px;color:#56616f}.detail-totals span{font-weight:700}.detail-view>p:nth-of-type(2){display:none}
-@media print{ @page{margin:12mm} body{background:#fff!important;color:#000!important}.topbar,.container>h2,.detail-history,.no-print{display:none!important}.container{max-width:none!important;margin:0!important;padding:0!important}.detail-view{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}.detail-header button{display:none!important}.detail-view>p:nth-of-type(2){display:none}.detail-totals{grid-template-columns:repeat(5,1fr);background:#fff;border:1px solid #999}.detail-tree,.detail-supply{break-inside:avoid}.detail-tree>summary,.detail-supply>summary{color:#000}.detail-pieces{font-size:10px}}
+.budget-print-view{display:none}.budget-print-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.budget-print-view h1{margin:0 0 12px}.budget-print-view table{width:100%;border-collapse:collapse;margin-top:18px}.budget-print-view th,.budget-print-view td{border:1px solid #333;padding:8px;text-align:left}.budget-print-view th{background:#edf2f7}.budget-print-view .money{text-align:right;white-space:nowrap}.budget-print-view tfoot td{font-weight:700}
+@media print{ @page{margin:12mm} body{background:#fff!important;color:#000!important}.topbar,.container>h2,.detail-history,.no-print{display:none!important}.container{max-width:none!important;margin:0!important;padding:0!important}.detail-view{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}.detail-header button{display:none!important}.detail-view>p:nth-of-type(2){display:none}.detail-totals{grid-template-columns:repeat(5,1fr);background:#fff;border:1px solid #999}.detail-tree,.detail-supply{break-inside:avoid}.detail-tree>summary,.detail-supply>summary{color:#000}.detail-pieces{font-size:10px}body.print-budget .detail-view{display:none!important}body.print-budget .budget-print-view{display:block!important}body.print-budget .budget-print-view h1{font-size:22px}}
 @media(max-width:800px){.budget-grid,.item-grid,.module-grid,.node-fields,.insumo-row,.piece-row{grid-template-columns:1fr 1fr}.tree.layer .node-fields{grid-template-columns:1fr}}
 </style>
 
 <?php if ($viewing !== null): ?>
 <section class="card detail-view">
-  <div class="detail-header"><h3>Presupuesto #<?= (int) ($viewing['id'] ?? 0) ?></h3><button type="button" class="secondary-btn no-print" onclick="window.print()">Imprimir detalle</button></div>
+  <div class="detail-header"><h3>Presupuesto #<?= (int) ($viewing['id'] ?? 0) ?></h3><div class="budget-print-actions no-print"><button type="button" class="secondary-btn" onclick="window.printBudget('detail')">Imprimir detalle</button><button type="button" class="secondary-btn" onclick="window.printBudget('budget')">Imprimir presupuesto</button></div></div>
   <?php
   $viewLabor = (float) ($viewing['mano_obra'] ?? 0);
   $viewMaterials = (float) ($viewing['materiales'] ?? 0);
@@ -423,6 +424,20 @@ render_page_start('Presupuestos por muebles');
   $detailKey = static fn (mixed $value): string => strtolower(str_replace(['_', '-', ' '], '', (string) $value));
   $legacyCutPieces = (array) ($viewing['piezas_corte'] ?? []);
   $viewTotal = (float) ($viewing['total'] ?? 0);
+  $viewItemMaterials = static function (array $item) use ($detailInputCost): float {
+      if (array_key_exists('materiales_unitarios', $item)) {
+          return (float) $item['materiales_unitarios'];
+      }
+      $materials = 0.0;
+      foreach ((array) ($item['modulos'] ?? []) as $module) {
+          foreach ((array) ($module['capas'] ?? []) as $layer) {
+              foreach ((array) ($layer['insumos'] ?? []) as $input) {
+                  $materials += $detailInputCost((array) $input);
+              }
+          }
+      }
+      return $materials;
+  };
   ?>
   <div class="detail-totals"><div><strong>Mano de obra</strong><span><?= money($viewLabor) ?></span></div><div><strong>Materiales</strong><span><?= money($viewMaterials) ?></span></div><div><strong>Subtotal</strong><span><?= money($viewSubtotal) ?></span></div><div><strong>Margen (<?= h((string) $viewMarginPercent) ?>%)</strong><span><?= money($viewMarginAmount) ?></span></div><div><strong>Total</strong><span><?= money($viewTotal) ?></span></div></div>
   <p><?= h((string) ($viewing['detalle'] ?? '')) ?> · <?= h((string) ($viewing['fecha'] ?? '')) ?></p>
@@ -558,16 +573,44 @@ render_page_start('Presupuestos por muebles');
 <?php endif; ?>
 
 <?php if ($viewing !== null): ?>
+<section class="budget-print-view">
+  <?php $viewClientId = (int) ($viewing['cliente_id'] ?? 0); ?>
+  <h1>Presupuesto</h1>
+  <p><strong>Cliente:</strong> <?= h($clientNames[$viewClientId] ?? ($viewClientId > 0 ? 'Cliente #' . $viewClientId : 'Sin cliente')) ?></p>
+  <table>
+    <thead><tr><th>Mueble</th><th>Trabajo</th><th>Cantidad</th><th class="money">Mano de obra</th><th class="money">Materiales</th></tr></thead>
+    <tbody>
+    <?php foreach ((array) ($viewing['items'] ?? []) as $printItem): ?>
+      <?php
+      $printQuantity = max(1, (int) ($printItem['cantidad'] ?? 1));
+      $printLabor = (float) ($printItem['mano_obra_unitaria'] ?? 0) * $printQuantity;
+      $printMaterials = $viewItemMaterials((array) $printItem) * $printQuantity;
+      ?>
+      <tr><td><?= h((string) ($printItem['tipo_mueble'] ?? 'Mueble')) ?></td><td><?= h((string) ($printItem['trabajo_tipo'] ?? '')) ?></td><td><?= $printQuantity ?></td><td class="money"><?= money($printLabor) ?></td><td class="money"><?= money($printMaterials) ?></td></tr>
+    <?php endforeach; ?>
+    </tbody>
+    <tfoot><tr><td colspan="3">Totales</td><td class="money"><?= money($viewLabor) ?></td><td class="money"><?= money($viewMaterials) ?></td></tr></tfoot>
+  </table>
+</section>
+<?php endif; ?>
+
+<?php if ($viewing !== null): ?>
 <script>
 (() => {
   let detailStates = [];
+  window.printBudget = (mode) => {
+    document.body.classList.toggle('print-budget', mode === 'budget');
+    window.print();
+  };
   const prepareDetailPrint = () => {
+    if (document.body.classList.contains('print-budget')) return;
     detailStates = [...document.querySelectorAll('.detail-view details')].map(detail => ({detail, open: detail.open}));
     detailStates.forEach(({detail}) => { detail.open = true; });
   };
   const restoreDetailPrint = () => {
     detailStates.forEach(({detail, open}) => { detail.open = open; });
     detailStates = [];
+    document.body.classList.remove('print-budget');
   };
   window.addEventListener('beforeprint', prepareDetailPrint);
   window.addEventListener('afterprint', restoreDetailPrint);
